@@ -1,5 +1,5 @@
 #include "simulation.hpp"
-#include "fluid_solver_cpu.h"
+#include "fluid_solver_cpu.hpp"
 #include "fluid_solver_gpu.cuh"
 
 #include <algorithm>

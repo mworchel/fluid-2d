@@ -1,4 +1,4 @@
-#include "fluid_solver_cpu.h"
+#include "fluid_solver_cpu.hpp"
 
 void fluid_solver_cpu::solve(grid<float>& density_grid, 
                              grid<float> const& density_source_grid, 
