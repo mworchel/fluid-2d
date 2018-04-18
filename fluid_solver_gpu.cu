@@ -94,14 +94,25 @@ __global__ void diffuse_iteration_kernel(T*           values,
   {
     for(size_t j = blockIdx.x * blockDim.x + threadIdx.x + 1; j < cols - 1; j += blockDim.x * gridDim.x)
     {
-      size_t center_idx = i * cols + j;
-      size_t left_idx = i * cols + (j - 1);
-      size_t right_idx = i * cols + (j + 1);
-      size_t top_idx = (i - 1) * cols + j;
-      size_t bottom_idx = (i + 1) * cols + j;
       T a = dt * static_cast<T>(rows * cols) * diffusion_rate;
 
-      values[center_idx] = (initial_values[center_idx] + a * (prev_values[left_idx] + prev_values[right_idx] + prev_values[top_idx] + prev_values[bottom_idx])) / (1.0 + 4.0 * a);
+      values[index(i, j, cols)] = (initial_values[index(i, j, cols)] + a * (prev_values[index(i, j - 1, cols)] + prev_values[index(i, j + 1, cols)] +
+                                                                            prev_values[index(i - 1, j, cols)] + prev_values[index(i + 1, j, cols)])) / (1.0 + 4.0 * a);
+    }
+  }
+}
+
+template<typename T>
+__global__ void smooth_kernel(T*           values,
+                              T const*     initial_values,
+                              size_t const rows,
+                              size_t const cols)
+{
+  for(size_t i = blockIdx.y * blockDim.y + threadIdx.y + 1; i < rows - 1; i += blockDim.y * gridDim.y)
+  {
+    for(size_t j = blockIdx.x * blockDim.x + threadIdx.x + 1; j < cols - 1; j += blockDim.x * gridDim.x)
+    {
+      values[index(i, j, cols)] = 0.2f * (initial_values[index(i, j, cols)] + initial_values[index(i, j - 1, cols)] + initial_values[index(i, j + 1, cols)] + initial_values[index(i - 1, j, cols)] + initial_values[index(i + 1, j, cols)]);
     }
   }
 }
@@ -238,18 +249,19 @@ void fluid_solver_gpu::solve(grid<float>& density_grid,
   add_sources(m_density_buffer, density_source_grid.data(), dt);
   diffuse(m_density_buffer, &fluid_solver_gpu::set_boundary_continuous, diffusion_rate, dt, 15);
   advect(m_density_buffer, m_horizontal_velocity_buffer, m_vertical_velocity_buffer, &fluid_solver_gpu::set_boundary_continuous, dt);
+  smooth(m_density_buffer);
 
   // Solve velocity related terms
   add_sources(m_horizontal_velocity_buffer, horizontal_velocity_source_grid.data(), dt);
   add_sources(m_vertical_velocity_buffer, vertical_velocity_source_grid.data(), dt);
   diffuse(m_horizontal_velocity_buffer, &fluid_solver_gpu::set_boundary_opposite_horizontal, viscosity, dt, 15);
   diffuse(m_vertical_velocity_buffer, &fluid_solver_gpu::set_boundary_opposite_vertical, viscosity, dt, 15);
-  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer);
+  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 15);
   cudaMemcpy(m_temp_buffer_2, m_horizontal_velocity_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
   cudaMemcpy(m_temp_buffer_3, m_vertical_velocity_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
   advect(m_horizontal_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_horizontal, dt);
   advect(m_vertical_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_vertical, dt);
-  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer);
+  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 15);
 
   // Download density and velocities to the cpu
   cudaMemcpy(density_grid.data(), m_density_buffer, buffer_size(), cudaMemcpyDeviceToHost);
@@ -335,26 +347,45 @@ void fluid_solver_gpu::diffuse(float* values_buffer,
                                float const dt,
                                size_t iteration_count)
 {
+  float* initial_values_buffer = m_temp_buffer_1;
+  float* previous_values_buffer = m_temp_buffer_2;
+
   unsigned int block_dim = 32;
   unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
   unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
 
   // First temporary buffer contains the initial values
   // Second temporary buffer contains the values of the previous iteration
-  cudaMemcpy(m_temp_buffer_1, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(initial_values_buffer, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
   for(size_t k = 0; k < iteration_count; k++)
   {
-    cudaMemcpy(m_temp_buffer_2, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(previous_values_buffer, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
 
     diffuse_iteration_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer,
-                                                                                                m_temp_buffer_2,
-                                                                                                m_temp_buffer_1,
+                                                                                                previous_values_buffer,
+                                                                                                initial_values_buffer,
                                                                                                 m_rows, m_cols,
                                                                                                 rate, dt);
     cudaDeviceSynchronize();
 
     set_boundary(values_buffer, m_rows, m_cols);
   }
+}
+
+void fluid_solver_gpu::smooth(float * values_buffer)
+{
+  float* initial_values = m_temp_buffer_1;
+  cudaMemcpy(m_temp_buffer_1, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
+
+  unsigned int block_dim = 32;
+  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
+  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
+
+  smooth_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer,
+                                                                                   initial_values,
+                                                                                   m_rows, m_cols);
+
+  cudaDeviceSynchronize();
 }
 
 void fluid_solver_gpu::advect(float * values_buffer,
@@ -381,7 +412,8 @@ void fluid_solver_gpu::advect(float * values_buffer,
   set_boundary(values_buffer, m_rows, m_cols);
 }
 
-void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * vertical_velocity_buffer)
+void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * vertical_velocity_buffer,
+                               size_t iteration_count)
 {
   float* divergence_buffer = m_temp_buffer_1;
   float* p_buffer = m_temp_buffer_2;
@@ -404,7 +436,7 @@ void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * verti
   set_boundary_continuous(divergence_buffer, m_rows, m_cols);
 
   float* p_previous_buffer = m_temp_buffer_3;
-  for(size_t k = 0; k < 20; ++k)
+  for(size_t k = 0; k < iteration_count; ++k)
   {
     cudaMemcpy(p_previous_buffer, p_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
 

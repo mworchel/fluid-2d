@@ -40,6 +40,8 @@ private:
                float const dt,
                size_t iteration_count);
 
+  void smooth(float* values_buffer);
+
   void advect(float* values_buffer,
               float* horizontal_velocity_buffer,
               float* vertical_velocity_buffer,
@@ -47,7 +49,8 @@ private:
               float const dt);
 
   void project(float* horizontal_velocity_buffer,
-               float* vertical_velocity_buffer);
+               float* vertical_velocity_buffer,
+               size_t iteration_count);
 
   inline size_t buffer_size()
   {

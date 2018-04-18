@@ -6,7 +6,7 @@ app::app(int arg_count, char ** args)
   : m_window{ sf::VideoMode{ 600, 600 }, "Simulation" }
   , m_simulation{ app::parse_simulation_config(arg_count, args) }
 {
-  m_time_state.simulation_dt = 16ms;
+  m_time_state.simulation_dt = 20ms;
 }
 
 void app::run()
@@ -31,11 +31,11 @@ void app::run()
 simulation_config app::parse_simulation_config(int arg_count, char ** args)
 {
   simulation_config config;
-  config.width = 300U;
-  config.height = 300U;
+  config.width = 800U;
+  config.height = 800U;
   config.solver_type = solver_type::gpu; 
-  config.diffusion_rate = 0.05f;
-  config.viscosity = 0.00001f;
+  config.diffusion_rate = 0.5f;
+  config.viscosity = 0.000001f;
   return config;
 }
 
