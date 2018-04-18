@@ -19,6 +19,9 @@ private:
   {
     bool  add_density = false;
     bool  remove_density = false;
+    bool  add_velocity = false;
+    float movement_direction_x = 0.f;
+    float movement_direction_y = 0.f;
     float manipulation_point_x = 0.f;
     float manipulation_point_y = 0.f;
   };
