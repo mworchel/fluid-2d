@@ -6,7 +6,32 @@ void fluid_solver_cpu::solve(grid<float>& density_grid,
                              float dt)
 {
   add_sources(density_grid, density_source_grid, dt);
-  diffuse(density_grid, diffusion_rate, dt);
+  diffuse(density_grid, &fluid_solver_cpu::boundary_continuity, diffusion_rate, dt);
+}
+
+void fluid_solver_cpu::boundary_continuity(grid<float>& _grid)
+{
+  for(size_t i = 0; i < _grid.rows(); i++)
+  {
+    _grid(i, 0) = _grid(i, 1);
+    _grid(i, _grid.cols() - 1) = _grid(i, _grid.cols() - 2);
+  }
+
+  for(size_t j = 0; j < _grid.cols(); j++)
+  {
+    _grid(0, j) = _grid(1, j);
+    _grid(_grid.rows() - 1, j) = _grid(_grid.rows() - 2, j);
+  }
+
+  _grid(0, 0)                               = 0.5f * (_grid(0, 1) + _grid(1, 0));
+  _grid(0, _grid.cols() - 1)                = 0.5f * (_grid(0, _grid.cols() - 2) + _grid(1, _grid.cols() - 1));
+  _grid(_grid.rows() - 1, 0)                = 0.5f * (_grid(_grid.rows() - 1, 1) + _grid(_grid.rows() - 2, 0));
+  _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
+}
+
+void fluid_solver_cpu::boundary_opposite(grid<float>& _grid)
+{
+  // TODO
 }
 
 void fluid_solver_cpu::add_sources(grid<float>& _grid, 
@@ -23,12 +48,13 @@ void fluid_solver_cpu::add_sources(grid<float>& _grid,
 }
 
 void fluid_solver_cpu::diffuse(grid<float>& _grid, 
+                               std::function<void(grid<float>&)> set_boundary,
                                float const diffusion_rate, 
                                float const dt)
 {
   float a = dt * static_cast<float>(_grid.rows() * _grid.cols()) *diffusion_rate;
 
-  grid<float> previous_grid = _grid;
+  grid<float> initial_grid = _grid;
 
   for(size_t k = 0; k < 20; k++)
   {
@@ -36,23 +62,11 @@ void fluid_solver_cpu::diffuse(grid<float>& _grid,
     {
       for(size_t j = 1; j < _grid.cols() - 1; j++)
       {
-        _grid(i, j) = (previous_grid(i, j) + a * (_grid(i - 1, j) + previous_grid(i + 1, j) +
-                                                  _grid(i, j - 1) + previous_grid(i, j + 1))) / (1.f + 4.f * a);
+        _grid(i, j) = (initial_grid(i, j) + a * (_grid(i - 1, j) + _grid(i + 1, j) +
+                                                 _grid(i, j - 1) + _grid(i, j + 1))) / (1.f + 4.f * a);
       }
     }
 
-    for(size_t i = 0; i < _grid.rows(); i++)
-    {
-      _grid(i, 0) = _grid(i, 1);
-      _grid(i, _grid.cols() - 1) = _grid(i, _grid.cols() - 2);
-    }
-
-    for(size_t j = 0; j < _grid.cols(); j++)
-    {
-      _grid(0, j) = _grid(1, j);
-      _grid(_grid.rows() - 1, j) = _grid(_grid.rows() - 2, j);
-    }
-
-    previous_grid = _grid;
+    set_boundary(_grid);
   }
 }

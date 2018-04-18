@@ -31,8 +31,8 @@ void app::run()
 simulation_config app::parse_simulation_config(int arg_count, char ** args)
 {
   simulation_config config;
-  config.width = 1000U;
-  config.height = 1000U;
+  config.width = 100U;
+  config.height = 100U;
   config.solver_type = solver_type::gpu; 
   return config;
 }

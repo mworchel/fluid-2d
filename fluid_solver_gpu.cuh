@@ -15,9 +15,27 @@ public:
              float const dt) override;
 
 private:
+  void add_sources(float* values_buffer, 
+                   float const* source_data, 
+                   float const dt);
+
+  void diffuse(float* values_buffer,
+               float const rate,
+               float const dt,
+               size_t iteration_count
+               /*TODO: Boundary*/);
+
+  void set_boundary(float* values_buffer);
+
+  inline size_t buffer_size()
+  {
+    return sizeof(float) * m_rows * m_cols;
+  }
+
   size_t m_rows;
   size_t m_cols;
   float* m_density_buffer;
-  float* m_density_source_buffer;
-  float* m_density_previous_buffer;
+  float* m_source_buffer;
+  float* m_diffuse_initial_buffer;
+  float* m_diffuse_previous_buffer;
 };
