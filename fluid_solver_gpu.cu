@@ -153,6 +153,44 @@ __global__ void advect_kernel(T*           values,
 }
 
 template<typename T>
+__global__ void advect_trace_kernel(T*           values,
+                                    T const*     initial_values,
+                                    T const*     horizontal_velocities,
+                                    T const*     vertical_velocities,
+                                    size_t const rows,
+                                    size_t const cols,
+                                    float const  dt0)
+{
+
+
+  for(size_t i = blockIdx.y * blockDim.y + threadIdx.y + 1; i < rows - 1; i += blockDim.y * gridDim.y)
+  {
+    for(size_t j = blockIdx.x * blockDim.x + threadIdx.x + 1; j < cols - 1; j += blockDim.x * gridDim.x)
+    {
+      float x = j + dt0 * horizontal_velocities[index(i, j, cols)];
+      float y = i + dt0 * vertical_velocities[index(i, j, cols)];
+
+      if(x < 1 || x > cols - 2 || y < 1 || y > rows - 2) continue;
+
+      size_t j0 = static_cast<size_t>(x);
+      size_t i0 = static_cast<size_t>(y);
+      size_t j1 = j0 + 1;
+      size_t i1 = i0 + 1;
+
+      float s0 = x - j0;
+      float s1 = 1 - s0;
+      float s2 = y - i0;
+      float s3 = 1 - s2;
+
+      atomicAdd(&values[index(i0    , j0, cols)], s1 * s3 * initial_values[index(i, j, cols)]);
+      atomicAdd(&values[index(i0 + 1, j0, cols)], s1 * s2 * initial_values[index(i, j, cols)]);
+      atomicAdd(&values[index(i0    , j0 + 1, cols)], s0 * s3 * initial_values[index(i, j, cols)]);
+      atomicAdd(&values[index(i0 + 1, j0 + 1, cols)], s0 * s2 * initial_values[index(i, j, cols)]);
+    }
+  }
+}
+
+template<typename T>
 __global__ void calculate_divergence_kernel(T* divergence,
                                             T const* horizontal_velocities,
                                             T const* vertical_velocities,
@@ -403,7 +441,9 @@ void fluid_solver_gpu::advect(float * values_buffer,
   unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
   unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
 
-  advect_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
+  cudaMemset(values_buffer, buffer_size(), 0);
+
+  advect_trace_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
                                                                                    horizontal_velocity_buffer, vertical_velocity_buffer,
                                                                                    m_rows, m_cols,
                                                                                    dt0);
