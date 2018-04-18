@@ -26,4 +26,10 @@ private:
                std::function<void(grid<float>&)> set_boundary,
                float const rate,
                float const dt);
+
+  void advect(grid<float>& _grid,
+              grid<float>& horizontal_velocity_grid,
+              grid<float>& vertical_velocity_grid,
+              std::function<void(grid<float>&)> set_boundary,
+              float const dt);
 };

@@ -1,5 +1,7 @@
 #include "fluid_solver_cpu.hpp"
 
+#include <algorithm>
+
 void fluid_solver_cpu::solve(grid<float>& density_grid, 
                              grid<float> const& density_source_grid, 
                              float const diffusion_rate,
@@ -7,6 +9,10 @@ void fluid_solver_cpu::solve(grid<float>& density_grid,
 {
   add_sources(density_grid, density_source_grid, dt);
   diffuse(density_grid, &fluid_solver_cpu::boundary_continuity, diffusion_rate, dt);
+
+  grid<float> u{ density_grid.rows(), density_grid.cols(), 0.f };
+  grid<float> v{ density_grid.rows(), density_grid.cols(), 0.001f };
+  advect(density_grid, u, v, &fluid_solver_cpu::boundary_continuity, dt);
 }
 
 void fluid_solver_cpu::boundary_continuity(grid<float>& _grid)
@@ -69,4 +75,40 @@ void fluid_solver_cpu::diffuse(grid<float>& _grid,
 
     set_boundary(_grid);
   }
+}
+
+void fluid_solver_cpu::advect(grid<float>& _grid, 
+                              grid<float>& horizontal_velocity_grid, 
+                              grid<float>& vertical_velocity_grid, 
+                              std::function<void(grid<float>&)> set_boundary, 
+                              float const dt)
+{
+  grid<float> initial_grid = _grid;
+
+  float dt0 = _grid.rows() * _grid.cols() * dt;
+
+  for(size_t i = 1; i < _grid.rows() - 1; i++)
+  {
+    for(size_t j = 1; j < _grid.cols() - 1; j++)
+    {
+      float x = j - dt0 * horizontal_velocity_grid(i, j);
+      float y = i - dt0 * vertical_velocity_grid(i, j);
+      x = std::max(1.5f, std::min(_grid.cols() - 1.5f, x));
+      y = std::max(1.5f, std::min(_grid.rows() - 1.5f, y));
+
+      size_t j0 = static_cast<size_t>(x);
+      size_t i0 = static_cast<size_t>(y);
+      size_t j1 = j0 + 1;
+      size_t i1 = i0 + 1;
+      float s0 = x - j0;
+      float s1 = 1 - s0;
+      float s2 = y - i0;
+      float s3 = 1 - s2;
+
+      _grid(i, j) = s3 * (s1 * initial_grid(i0, j0) + s0 * initial_grid(i0, j1)) +
+        s2 * (s1 * initial_grid(i1, j0) + s0 * initial_grid(i1, j1));
+    }
+  }
+
+  set_boundary(_grid);
 }
