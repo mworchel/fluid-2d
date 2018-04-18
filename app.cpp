@@ -31,11 +31,11 @@ void app::run()
 simulation_config app::parse_simulation_config(int arg_count, char ** args)
 {
   simulation_config config;
-  config.width = 100U;
-  config.height = 100U;
-  config.solver_type = solver_type::cpu; 
-  config.diffusion_rate = 0.01f;
-  config.viscosity = 0.005f;
+  config.width = 300U;
+  config.height = 300U;
+  config.solver_type = solver_type::gpu; 
+  config.diffusion_rate = 0.05f;
+  config.viscosity = 0.00001f;
   return config;
 }
 
@@ -44,6 +44,14 @@ void app::handle_event(sf::Event const & event)
   if(event.type == sf::Event::Closed)
   {
     m_window.close();
+  }
+
+  if(event.type == sf::Event::KeyReleased)
+  {
+    if(event.key.code == sf::Keyboard::R)
+    {
+      m_simulation.reset();
+    }
   }
 
   if(event.type == sf::Event::MouseButtonPressed)

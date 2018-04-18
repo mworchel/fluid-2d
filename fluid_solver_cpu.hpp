@@ -19,11 +19,11 @@ public:
              float const dt) override;
 
 private:
-  static void boundary_continuity(grid<float>& _grid);
+  static void set_boundary_continuous(grid<float>& _grid);
 
-  static void boundary_opposite_horizontal(grid<float>& _grid);
+  static void set_boundary_opposite_horizontal(grid<float>& _grid);
 
-  static void boundary_opposite_vertical(grid<float>& _grid);
+  static void set_boundary_opposite_vertical(grid<float>& _grid);
 
   void add_sources(grid<float>& _grid,
                    grid<float> const& source_grid,

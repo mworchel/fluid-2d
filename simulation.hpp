@@ -26,6 +26,8 @@ class simulation
 public:
   simulation(simulation_config const& config);
 
+  void reset();
+
   bool to_density_cell(float const x, float const y, sf::RenderTarget const& target, size_t& i, size_t& j);
 
   bool to_velocity_cell(float const x, float const y, sf::RenderTarget const& target, size_t& i, size_t& j);

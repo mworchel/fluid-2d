@@ -27,6 +27,13 @@ simulation::simulation(simulation_config const& config)
   }
 }
 
+void simulation::reset()
+{
+  std::fill(std::begin(m_density_grid), std::end(m_density_grid), 0.f);
+  std::fill(std::begin(m_horizontal_velocity_grid), std::end(m_horizontal_velocity_grid), 0.f);
+  std::fill(std::begin(m_vertical_velocity_grid), std::end(m_vertical_velocity_grid), 0.f);
+}
+
 bool simulation::to_density_cell(float x, float y, const sf::RenderTarget & target, size_t & i, size_t & j)
 {
   return m_density_grid_renderer.coordinates_to_cell(x, y, target, i, j);

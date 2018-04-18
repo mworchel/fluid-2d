@@ -14,23 +14,23 @@ void fluid_solver_cpu::solve(grid<float>& density_grid,
 {
   // Solve the density related terms
   add_sources(density_grid, density_source_grid, dt);
-  diffuse(density_grid, &fluid_solver_cpu::boundary_continuity, diffusion_rate, dt);
-  advect(density_grid, horizontal_velocity_grid, vertical_velocity_grid, &fluid_solver_cpu::boundary_continuity, dt);
+  diffuse(density_grid, &fluid_solver_cpu::set_boundary_continuous, diffusion_rate, dt);
+  advect(density_grid, horizontal_velocity_grid, vertical_velocity_grid, &fluid_solver_cpu::set_boundary_continuous, dt);
 
   // Solve the velocity related terms
   add_sources(horizontal_velocity_grid, horizontal_velocity_source_grid, dt);
   add_sources(vertical_velocity_grid, vertical_velocity_source_grid, dt);
-  diffuse(horizontal_velocity_grid, &fluid_solver_cpu::boundary_opposite_horizontal, viscosity, dt);
-  diffuse(vertical_velocity_grid, &fluid_solver_cpu::boundary_opposite_vertical, viscosity, dt);
+  diffuse(horizontal_velocity_grid, &fluid_solver_cpu::set_boundary_opposite_horizontal, viscosity, dt);
+  diffuse(vertical_velocity_grid, &fluid_solver_cpu::set_boundary_opposite_vertical, viscosity, dt);
   project(horizontal_velocity_grid, vertical_velocity_grid);
   grid<float> temp_horizontal_velocity = horizontal_velocity_grid;
   grid<float> temp_vertical_velocity = vertical_velocity_grid;
-  advect(horizontal_velocity_grid, temp_horizontal_velocity, temp_vertical_velocity, &fluid_solver_cpu::boundary_opposite_horizontal, dt);
-  advect(vertical_velocity_grid, temp_horizontal_velocity, temp_vertical_velocity, &fluid_solver_cpu::boundary_opposite_vertical, dt);
+  advect(horizontal_velocity_grid, temp_horizontal_velocity, temp_vertical_velocity, &fluid_solver_cpu::set_boundary_opposite_horizontal, dt);
+  advect(vertical_velocity_grid, temp_horizontal_velocity, temp_vertical_velocity, &fluid_solver_cpu::set_boundary_opposite_vertical, dt);
   project(horizontal_velocity_grid, vertical_velocity_grid);
 }
 
-void fluid_solver_cpu::boundary_continuity(grid<float>& _grid)
+void fluid_solver_cpu::set_boundary_continuous(grid<float>& _grid)
 {
   for(size_t i = 0; i < _grid.rows(); i++)
   {
@@ -50,7 +50,7 @@ void fluid_solver_cpu::boundary_continuity(grid<float>& _grid)
   _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
 }
 
-void fluid_solver_cpu::boundary_opposite_horizontal(grid<float>& _grid)
+void fluid_solver_cpu::set_boundary_opposite_horizontal(grid<float>& _grid)
 {
   for(size_t i = 0; i < _grid.rows(); i++)
   {
@@ -70,7 +70,7 @@ void fluid_solver_cpu::boundary_opposite_horizontal(grid<float>& _grid)
   _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
 }
 
-void fluid_solver_cpu::boundary_opposite_vertical(grid<float>& _grid)
+void fluid_solver_cpu::set_boundary_opposite_vertical(grid<float>& _grid)
 {
 
   for(size_t j = 0; j < _grid.cols(); j++)
@@ -182,7 +182,7 @@ void fluid_solver_cpu::project(grid<float>& horizontal_velocity_grid, grid<float
                                       vertical_velocity_grid(i + 1, j) - vertical_velocity_grid(i - 1, j));
     }
   }
-  boundary_continuity(divergence);
+  set_boundary_continuous(divergence);
 
   for(size_t k = 0; k < 20; ++k)
   {
@@ -194,7 +194,7 @@ void fluid_solver_cpu::project(grid<float>& horizontal_velocity_grid, grid<float
                                       p(i + 1, j) + p(i - 1, j)) / 4.0f;
       }
     }
-    boundary_continuity(p);
+    set_boundary_continuous(p);
   }
 
   for(size_t i = 1; i < rows - 1; i++)
@@ -206,6 +206,6 @@ void fluid_solver_cpu::project(grid<float>& horizontal_velocity_grid, grid<float
     }
   }
 
-  boundary_opposite_horizontal(horizontal_velocity_grid);
-  boundary_opposite_vertical(vertical_velocity_grid);
+  set_boundary_opposite_horizontal(horizontal_velocity_grid);
+  set_boundary_opposite_vertical(vertical_velocity_grid);
 }
