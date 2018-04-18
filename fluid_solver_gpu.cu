@@ -170,7 +170,7 @@ __global__ void advect_trace_kernel(T*           values,
       float x = j + dt0 * horizontal_velocities[index(i, j, cols)];
       float y = i + dt0 * vertical_velocities[index(i, j, cols)];
 
-      if(x < 1 || x > cols - 2 || y < 1 || y > rows - 2) continue;
+      if(x < 0.5f || x > cols - 1.5f || y < 0.5f || y > rows - 1.5f) continue;
 
       size_t j0 = static_cast<size_t>(x);
       size_t i0 = static_cast<size_t>(y);
@@ -182,9 +182,9 @@ __global__ void advect_trace_kernel(T*           values,
       float s2 = y - i0;
       float s3 = 1 - s2;
 
-      atomicAdd(&values[index(i0    , j0, cols)], s1 * s3 * initial_values[index(i, j, cols)]);
+      atomicAdd(&values[index(i0, j0, cols)], s1 * s3 * initial_values[index(i, j, cols)]);
       atomicAdd(&values[index(i0 + 1, j0, cols)], s1 * s2 * initial_values[index(i, j, cols)]);
-      atomicAdd(&values[index(i0    , j0 + 1, cols)], s0 * s3 * initial_values[index(i, j, cols)]);
+      atomicAdd(&values[index(i0, j0 + 1, cols)], s0 * s3 * initial_values[index(i, j, cols)]);
       atomicAdd(&values[index(i0 + 1, j0 + 1, cols)], s0 * s2 * initial_values[index(i, j, cols)]);
     }
   }
@@ -286,7 +286,7 @@ void fluid_solver_gpu::solve(grid<float>& density_grid,
   // Solve density related terms
   add_sources(m_density_buffer, density_source_grid.data(), dt);
   diffuse(m_density_buffer, &fluid_solver_gpu::set_boundary_continuous, diffusion_rate, dt, 15);
-  advect(m_density_buffer, m_horizontal_velocity_buffer, m_vertical_velocity_buffer, &fluid_solver_gpu::set_boundary_continuous, dt);
+  advect(m_density_buffer, m_horizontal_velocity_buffer, m_vertical_velocity_buffer, &fluid_solver_gpu::set_boundary_continuous, dt, true);
   smooth(m_density_buffer);
 
   // Solve velocity related terms
@@ -294,12 +294,12 @@ void fluid_solver_gpu::solve(grid<float>& density_grid,
   add_sources(m_vertical_velocity_buffer, vertical_velocity_source_grid.data(), dt);
   diffuse(m_horizontal_velocity_buffer, &fluid_solver_gpu::set_boundary_opposite_horizontal, viscosity, dt, 15);
   diffuse(m_vertical_velocity_buffer, &fluid_solver_gpu::set_boundary_opposite_vertical, viscosity, dt, 15);
-  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 15);
+  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 20);
   cudaMemcpy(m_temp_buffer_2, m_horizontal_velocity_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
   cudaMemcpy(m_temp_buffer_3, m_vertical_velocity_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
-  advect(m_horizontal_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_horizontal, dt);
-  advect(m_vertical_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_vertical, dt);
-  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 15);
+  advect(m_horizontal_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_horizontal, dt, false);
+  advect(m_vertical_velocity_buffer, m_temp_buffer_2, m_temp_buffer_3, &fluid_solver_gpu::set_boundary_opposite_vertical, dt, false);
+  project(m_horizontal_velocity_buffer, m_vertical_velocity_buffer, 20);
 
   // Download density and velocities to the cpu
   cudaMemcpy(density_grid.data(), m_density_buffer, buffer_size(), cudaMemcpyDeviceToHost);
@@ -430,7 +430,8 @@ void fluid_solver_gpu::advect(float * values_buffer,
                               float * horizontal_velocity_buffer,
                               float * vertical_velocity_buffer,
                               std::function<void(float*, size_t, size_t)> set_boundary,
-                              float const dt)
+                              float const dt,
+                              bool trace)
 {
   // First temp buffer contains the initial values
   cudaMemcpy(m_temp_buffer_1, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
@@ -441,13 +442,27 @@ void fluid_solver_gpu::advect(float * values_buffer,
   unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
   unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
 
-  cudaMemset(values_buffer, buffer_size(), 0);
+  if(trace)
+  {
+    cudaMemset(values_buffer, 0, buffer_size());
+    cudaDeviceSynchronize();
 
-  advect_trace_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
-                                                                                   horizontal_velocity_buffer, vertical_velocity_buffer,
-                                                                                   m_rows, m_cols,
-                                                                                   dt0);
-  cudaDeviceSynchronize();
+    advect_trace_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
+                                                                                           horizontal_velocity_buffer, vertical_velocity_buffer,
+                                                                                           m_rows, m_cols,
+                                                                                           dt0);
+
+    cudaDeviceSynchronize();
+  }
+  else
+  {
+    advect_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
+                                                                                     horizontal_velocity_buffer, vertical_velocity_buffer,
+                                                                                     m_rows, m_cols,
+                                                                                     dt0);
+
+    cudaDeviceSynchronize();
+  }
 
   set_boundary(values_buffer, m_rows, m_cols);
 }
@@ -459,6 +474,7 @@ void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * verti
   float* p_buffer = m_temp_buffer_2;
   cudaMemset(divergence_buffer, 0, buffer_size());
   cudaMemset(p_buffer, 0, buffer_size());
+  cudaDeviceSynchronize();
 
   float h = 1.0f / sqrtf(m_rows * m_cols);
 

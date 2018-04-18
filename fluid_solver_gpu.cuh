@@ -46,7 +46,8 @@ private:
               float* horizontal_velocity_buffer,
               float* vertical_velocity_buffer,
               std::function<void(float*, size_t, size_t)> set_boundary,
-              float const dt);
+              float const dt,
+              bool trace);
 
   void project(float* horizontal_velocity_buffer,
                float* vertical_velocity_buffer,

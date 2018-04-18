@@ -31,8 +31,8 @@ void app::run()
 simulation_config app::parse_simulation_config(int arg_count, char ** args)
 {
   simulation_config config;
-  config.width = 800U;
-  config.height = 800U;
+  config.width = 1000U;
+  config.height = 1000U;
   config.solver_type = solver_type::gpu; 
   config.diffusion_rate = 0.5f;
   config.viscosity = 0.000001f;
@@ -123,7 +123,7 @@ void app::update()
       if(m_simulation.to_density_cell(m_input_state.manipulation_point_x, m_input_state.manipulation_point_y, m_window, i, j))
       {
         float sign = m_input_state.add_density ? 1.f : -1.f;
-        m_simulation.add_density_source(i, j, sign * 0.05f);
+        m_simulation.add_density_source(i, j, sign * 0.075f);
       }
     }
 

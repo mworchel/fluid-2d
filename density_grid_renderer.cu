@@ -20,7 +20,11 @@ __global__ void grid_to_image_kernel(const T*     grid,
       const T&  grid_value = *((T*)((char*)grid + i * grid_pitch) + j);
       sf_pixel& image_value = *((sf_pixel*)((char*)image + i * image_pitch) + j);
 
-      image_value.R = image_value.G = image_value.B = static_cast<uint8_t>(max(0.0f, min(1.0f, grid_value)) * 255.0);
+      float clamped_value = max(0.0f, min(1.0f, grid_value));
+
+      image_value.R = static_cast<uint8_t>(max(0.f, min(255.f, 200.f * grid_value)));
+      image_value.G = static_cast<uint8_t>(max(0.f, min(255.f, 100.f * grid_value)));
+      image_value.B = static_cast<uint8_t>(max(0.f, min(255.f, 50.f * grid_value)));
       image_value.A = 255U;
     }
   }
