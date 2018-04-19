@@ -1,6 +1,8 @@
 #pragma once
 
 #include "grid.hpp"
+#include "grid_renderer.hpp"
+#include "pitched_buffer.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -16,7 +18,7 @@ struct sf_pixel
   uint8_t A;
 };
 
-class density_grid_renderer
+class density_grid_renderer : public grid_renderer
 {
 public:
   density_grid_renderer(size_t const rows, size_t const cols);
@@ -27,15 +29,9 @@ public:
 
   void draw(grid<float> const& grid, sf::RenderTarget& target);
 
-  bool coordinates_to_cell(float const x, float const y, const sf::RenderTarget& target, size_t& i, size_t& j);
-
 private:
-  size_t                m_rows;
-  size_t                m_cols;
-  float*                m_grid_buffer;
-  size_t                m_grid_buffer_pitch;
-  sf::Texture           m_texture;
-  std::vector<sf_pixel> m_image;
-  sf_pixel*             m_image_buffer;
-  size_t                m_image_buffer_pitch;
+  pitched_buffer<float>    m_grid_buffer;
+  sf::Texture              m_texture;
+  std::vector<sf_pixel>    m_image;
+  pitched_buffer<sf_pixel> m_image_buffer;
 };

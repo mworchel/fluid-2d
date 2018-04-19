@@ -3,6 +3,7 @@
 #include "grid.hpp"
 #include "fluid_solver.hpp"
 #include "density_grid_renderer.cuh"
+#include "velocity_grid_renderer.cuh"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
@@ -50,5 +51,6 @@ private:
   grid<float>                   m_vertical_velocity_grid;
   grid<float>                   m_horizontal_velocity_source_grid;
   grid<float>                   m_vertical_velocity_source_grid;
+  velocity_grid_renderer        m_velocity_grid_renderer;
   std::unique_ptr<fluid_solver> m_solver;
 };

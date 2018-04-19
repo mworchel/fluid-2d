@@ -13,6 +13,7 @@ simulation::simulation(simulation_config const& config)
   , m_vertical_velocity_source_grid{ config.height, config.width, 0.f }
   , m_density_source_grid{ config.height, config.width, 0.f }
   , m_density_grid_renderer{ config.height, config.width }
+  , m_velocity_grid_renderer{ config.height, config.width }
 {
   switch(config.solver_type)
   {
@@ -74,4 +75,5 @@ void simulation::update(const std::chrono::duration<float>& dt)
 void simulation::draw(sf::RenderTarget& target)
 {
   m_density_grid_renderer.draw_gpu(m_density_grid, target);
+  //m_velocity_grid_renderer.draw_gpu(m_horizontal_velocity_grid, m_vertical_velocity_grid, target);
 }
