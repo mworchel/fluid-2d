@@ -19,9 +19,9 @@ public:
     cudaFree(m_data);
   }
 
-  virtual void clear(int value) override
+  virtual cudaError_t clear(int value) override
 	{
-    cudaMemset2D(m_data, m_pitch, value, byte_width(), height());
+    return cudaMemset2D(m_data, m_pitch, value, byte_width(), height());
 	}
 	
   virtual T* data() override

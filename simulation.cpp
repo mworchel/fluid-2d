@@ -78,5 +78,5 @@ void simulation::draw(sf::RenderTarget& target, color_multipliers const& density
     m_density_grid_renderer.draw(target, m_density_grid, density_color_multipliers);
 
   if(draw_velocity)
-    m_velocity_grid_renderer.draw_gpu(m_horizontal_velocity_grid, m_vertical_velocity_grid, target);
+    m_velocity_grid_renderer.draw(m_horizontal_velocity_grid, m_vertical_velocity_grid, target);
 }

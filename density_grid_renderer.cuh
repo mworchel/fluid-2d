@@ -2,7 +2,7 @@
 
 #include "grid.hpp"
 #include "grid_renderer.hpp"
-#include "pitched_buffer.hpp"
+#include "linear_buffer.hpp"
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -35,8 +35,8 @@ public:
   void draw(sf::RenderTarget& target, grid<float> const& grid, color_multipliers const& multipliers);
 
 private:
-  pitched_buffer<float>    m_grid_buffer;
-  sf::Texture              m_texture;
-  std::vector<sf_pixel>    m_image;
-  pitched_buffer<sf_pixel> m_image_buffer;
+  linear_buffer<float>    m_grid_buffer;
+  sf::Texture             m_texture;
+  std::vector<sf_pixel>   m_image;
+  linear_buffer<sf_pixel> m_image_buffer;
 };

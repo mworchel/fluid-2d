@@ -1,10 +1,13 @@
 #include "velocity_grid_renderer.cuh"
+#include "kernel_launcher.hpp"
+#include "utilities.hpp"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
-__global__ void velocity_to_lines_kernel(element_accessor<float> horizontal_velocities,
-										 element_accessor<float> vertical_velocities,
+template<typename T>
+__global__ void velocity_to_lines_kernel(element_accessor<T> horizontal_velocities,
+										 element_accessor<T> vertical_velocities,
 										 element_accessor<sf_line> line_vertices,
 										 size_t rows, size_t cols,
                      float horizontal_scale, float vertical_scale)
@@ -40,48 +43,29 @@ velocity_grid_renderer::velocity_grid_renderer(size_t const _rows, size_t const 
 	, m_horizontal_velocity_buffer{ _cols, _rows }
 	, m_vertical_velocity_buffer{ _cols, _rows }
 {
-	m_line_vertices.resize(2 * _rows * _cols);
+	m_line_vertices.resize(_rows * _cols);
 }
 
 velocity_grid_renderer::~velocity_grid_renderer()
 {
 }
 
-void velocity_grid_renderer::draw_gpu(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target)
+void velocity_grid_renderer::draw(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target)
 {
 	// Upload velocities to gpu
-	cudaError error = cudaMemcpy2D(m_horizontal_velocity_buffer.data(), m_horizontal_velocity_buffer.pitch(),
-								   horizontal_velocity.data(), sizeof(float) * cols(),
-								   sizeof(float) * cols(), rows(),
-								   cudaMemcpyHostToDevice);
+  cudaError error = copy(m_horizontal_velocity_buffer, horizontal_velocity);
+  error = copy(m_vertical_velocity_buffer, vertical_velocity);
 
-	error = cudaMemcpy2D(m_vertical_velocity_buffer.data(), m_vertical_velocity_buffer.pitch(),
-						 vertical_velocity.data(), sizeof(float) * cols(),
-						 sizeof(float) * cols(), rows(),
-						 cudaMemcpyHostToDevice);
+  error = m_line_vertex_buffer.clear(0);
 
-	error = cudaMemset2D(m_line_vertex_buffer.data(), m_line_vertex_buffer.pitch(), 0, sizeof(sf_line) * cols(), rows());
-
-	unsigned int block_dim = 32;
-	unsigned int grid_dim_x = static_cast<unsigned int>((cols() + block_dim - 1) / block_dim);
-	unsigned int grid_dim_y = static_cast<unsigned int>((rows() + block_dim - 1) / block_dim);
-
-
-	velocity_to_lines_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (m_horizontal_velocity_buffer.accessor(),
-																								m_vertical_velocity_buffer.accessor(),
-																								m_line_vertex_buffer.accessor(),
-																								rows(), cols(), static_cast<float>(target.getSize().x) / cols(), static_cast<float>(target.getSize().y) / rows());
+	kernel_launcher::launch_2d(&velocity_to_lines_kernel<float>, cols(), rows(),
+                             m_horizontal_velocity_buffer.accessor(), m_vertical_velocity_buffer.accessor(),
+														 m_line_vertex_buffer.accessor(),
+														 rows(), cols(), static_cast<float>(target.getSize().x) / cols(), static_cast<float>(target.getSize().y) / rows());
 	error = cudaDeviceSynchronize();
 
 	// 
-	error = cudaMemcpy2D(m_line_vertices.data(), sizeof(sf_line) * cols(), 
-						 m_line_vertex_buffer.data(), m_line_vertex_buffer.pitch(),
-						 sizeof(sf_line) * cols(), rows(), cudaMemcpyDeviceToHost);
+	error = copy(m_line_vertices.data(), cols(), rows(), m_line_vertex_buffer, cudaMemcpyDeviceToHost);
 
-	target.draw(reinterpret_cast<sf::Vertex*>(m_line_vertices.data()), m_line_vertices.size(), sf::PrimitiveType::Lines);
-}
-
-void velocity_grid_renderer::draw(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target)
-{
-
+	target.draw(reinterpret_cast<sf::Vertex*>(m_line_vertices.data()), 2 * m_line_vertices.size(), sf::PrimitiveType::Lines);
 }

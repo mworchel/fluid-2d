@@ -40,7 +40,7 @@ public:
 
   virtual ~gpu_buffer() = default;
 
-  virtual void clear(int value) = 0;
+  virtual cudaError_t clear(int value) = 0;
 
   virtual T* data() = 0;
 
