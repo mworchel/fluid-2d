@@ -35,12 +35,17 @@ public:
 		: m_width(width)
 		, m_height(height)
 	{
-		cudaMallocPitch(&m_buffer, &m_pitch, sizeof(T) * m_width, m_height);
+		cudaMallocPitch(&m_buffer, &m_pitch, byte_width(), m_height);
 	}
 
 	~pitched_buffer()
 	{
 		cudaFree(m_buffer);
+	}
+
+	void clear(T value)
+	{
+	cudaMemset2D(m_buffer, m_pitch, value, byte_width(), m_height);
 	}
 
 	T* buffer()
@@ -61,6 +66,26 @@ public:
 	element_accessor<T> accessor()
 	{
 		return element_accessor<T>{ m_buffer, m_pitch };
+	}
+
+	element_accessor<T> const accessor() const
+	{
+		return element_accessor<T>{ m_buffer, m_pitch };
+	}
+
+	size_t width()
+	{
+	return m_width;
+	}
+
+	size_t height()
+	{
+		return m_height;
+	}
+
+	size_t byte_width()
+	{
+		return sizeof(T) * m_width;
 	}
 
 private:
