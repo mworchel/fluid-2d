@@ -55,12 +55,12 @@ void app::handle_event(sf::Event const & event)
 
     if(event.key.code == sf::Keyboard::V)
     {
-      m_input_state.draw_velocity = !m_input_state.draw_velocity;
+      m_draw_state.draw_velocity = !m_draw_state.draw_velocity;
     }
 
     if(event.key.code == sf::Keyboard::D)
     {
-      m_input_state.draw_density = !m_input_state.draw_density;
+      m_draw_state.draw_density = !m_draw_state.draw_density;
     }
   }
 
@@ -73,13 +73,12 @@ void app::handle_event(sf::Event const & event)
 
     if(event.mouseButton.button == sf::Mouse::Left)
     {
-      m_input_state.add_density = true;
+      m_source_state.add_density = true;
     }
 
     if(event.mouseButton.button == sf::Mouse::Right)
     {
-      //m_input_state.remove_density = true;
-      m_input_state.add_velocity = true;
+      m_source_state.add_velocity = true;
     }
   }
 
@@ -89,12 +88,6 @@ void app::handle_event(sf::Event const & event)
     float current_y = static_cast<float>(event.mouseMove.y);
     m_input_state.movement_direction_x = current_x - m_input_state.manipulation_point_x;
     m_input_state.movement_direction_y = current_y - m_input_state.manipulation_point_y;
-    //float magnitude = sqrtf(m_input_state.movement_direction_x * m_input_state.movement_direction_x + m_input_state.movement_direction_y * m_input_state.movement_direction_y);
-    //if(magnitude > 0.f)
-    //{
-    //  m_input_state.movement_direction_x /= magnitude;
-    //  m_input_state.movement_direction_y /= magnitude;
-    //}
     m_input_state.manipulation_point_x = current_x;
     m_input_state.manipulation_point_y = current_y;
   }
@@ -103,13 +96,13 @@ void app::handle_event(sf::Event const & event)
   {
     if(event.mouseButton.button == sf::Mouse::Left)
     {
-      m_input_state.add_density = false;
+      m_source_state.add_density = false;
     }
 
     if(event.mouseButton.button == sf::Mouse::Right)
     {
       //m_input_state.remove_density = false;
-      m_input_state.add_velocity = false;
+      m_source_state.add_velocity = false;
     }
   }
 }
@@ -125,26 +118,24 @@ void app::update()
   {
     m_time_state.elapsed_accumulated -= m_time_state.simulation_dt;
 
-    // Add sources from input to the simulation
-    if(m_input_state.add_density || m_input_state.remove_density)
+    if(m_source_state.add_density)
     {
       size_t i;
       size_t j;
       if(m_simulation.to_density_cell(m_input_state.manipulation_point_x, m_input_state.manipulation_point_y, m_window, i, j))
       {
-        float sign = m_input_state.add_density ? 1.f : -1.f;
-        m_simulation.add_density_source(i, j, sign * 0.075f);
+        m_simulation.add_density_source(i, j, 0.075f);
       }
     }
 
-    if(m_input_state.add_velocity)
+    if(m_source_state.add_velocity)
     {
       size_t i;
       size_t j;
       if(m_simulation.to_velocity_cell(m_input_state.manipulation_point_x, m_input_state.manipulation_point_y, m_window, i, j))
       {
-        m_simulation.add_velocity_source(i, j, 
-                                         0.05f * m_input_state.movement_direction_x, 
+        m_simulation.add_velocity_source(i, j,
+                                         0.05f * m_input_state.movement_direction_x,
                                          0.05f * m_input_state.movement_direction_y);
       }
     }
@@ -156,6 +147,6 @@ void app::update()
 void app::draw()
 {
   m_window.clear();
-  m_simulation.draw(m_window, m_input_state.draw_density, m_input_state.draw_velocity);
+  m_simulation.draw(m_window, m_draw_state.density_color_multipliers, m_draw_state.draw_density, m_draw_state.draw_velocity);
   m_window.display();
 }

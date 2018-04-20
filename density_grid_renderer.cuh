@@ -18,6 +18,13 @@ struct sf_pixel
   uint8_t A;
 };
 
+struct color_multipliers
+{
+  float r;
+  float g;
+  float b;
+};
+
 class density_grid_renderer : public grid_renderer
 {
 public:
@@ -25,9 +32,7 @@ public:
 
   ~density_grid_renderer();
 
-  void draw_gpu(grid<float> const& grid, sf::RenderTarget& target);
-
-  void draw(grid<float> const& grid, sf::RenderTarget& target);
+  void draw(sf::RenderTarget& target, grid<float> const& grid, color_multipliers const& multipliers);
 
 private:
   pitched_buffer<float>    m_grid_buffer;

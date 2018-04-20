@@ -72,10 +72,10 @@ void simulation::update(const std::chrono::duration<float>& dt)
   std::fill(std::begin(m_vertical_velocity_source_grid), std::end(m_vertical_velocity_source_grid), 0.0f);
 }
 
-void simulation::draw(sf::RenderTarget& target, bool draw_density, bool draw_velocity)
+void simulation::draw(sf::RenderTarget& target, color_multipliers const& density_color_multipliers, bool draw_density, bool draw_velocity)
 {
   if(draw_density)
-    m_density_grid_renderer.draw_gpu(m_density_grid, target);
+    m_density_grid_renderer.draw(target, m_density_grid, density_color_multipliers);
 
   if(draw_velocity)
     m_velocity_grid_renderer.draw_gpu(m_horizontal_velocity_grid, m_vertical_velocity_grid, target);

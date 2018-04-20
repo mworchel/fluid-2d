@@ -39,7 +39,7 @@ public:
 
   void update(const std::chrono::duration<float>& dt);
 
-  void draw(sf::RenderTarget& target, bool draw_density, bool draw_velocity);
+  void draw(sf::RenderTarget& target, color_multipliers const& density_color_multipliers, bool draw_density, bool draw_velocity);
 
 private:
   simulation_config             m_config;
