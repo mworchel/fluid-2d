@@ -381,7 +381,7 @@ void fluid_solver_gpu::advect(pitched_buffer<float>& values_buffer,
 
   if(trace)
   {
-    values_buffer.clear(0.f);
+    values_buffer.clear(0);
     cudaDeviceSynchronize();
 
     kernel_launcher::launch_2d(&advect_trace_kernel<float>, m_cols, m_rows,
@@ -410,8 +410,8 @@ void fluid_solver_gpu::project(pitched_buffer<float>& horizontal_velocity_buffer
 {
   pitched_buffer<float>& divergence_buffer = m_temp_buffer_1;
   pitched_buffer<float>& p_buffer = m_temp_buffer_2;
-  divergence_buffer.clear(0.f);
-  p_buffer.clear(0.f);
+  divergence_buffer.clear(0);
+  p_buffer.clear(0);
   cudaDeviceSynchronize();
 
   float h = 1.0f / sqrtf(m_rows * m_cols);

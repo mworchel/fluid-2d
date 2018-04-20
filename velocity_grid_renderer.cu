@@ -50,17 +50,17 @@ velocity_grid_renderer::~velocity_grid_renderer()
 void velocity_grid_renderer::draw_gpu(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target)
 {
 	// Upload velocities to gpu
-	cudaError error = cudaMemcpy2D(m_horizontal_velocity_buffer.buffer(), m_horizontal_velocity_buffer.pitch(),
+	cudaError error = cudaMemcpy2D(m_horizontal_velocity_buffer.data(), m_horizontal_velocity_buffer.pitch(),
 								   horizontal_velocity.data(), sizeof(float) * cols(),
 								   sizeof(float) * cols(), rows(),
 								   cudaMemcpyHostToDevice);
 
-	error = cudaMemcpy2D(m_vertical_velocity_buffer.buffer(), m_vertical_velocity_buffer.pitch(),
+	error = cudaMemcpy2D(m_vertical_velocity_buffer.data(), m_vertical_velocity_buffer.pitch(),
 						 vertical_velocity.data(), sizeof(float) * cols(),
 						 sizeof(float) * cols(), rows(),
 						 cudaMemcpyHostToDevice);
 
-	error = cudaMemset2D(m_line_vertex_buffer.buffer(), m_line_vertex_buffer.pitch(), 0, sizeof(sf_line) * cols(), rows());
+	error = cudaMemset2D(m_line_vertex_buffer.data(), m_line_vertex_buffer.pitch(), 0, sizeof(sf_line) * cols(), rows());
 
 	unsigned int block_dim = 32;
 	unsigned int grid_dim_x = static_cast<unsigned int>((cols() + block_dim - 1) / block_dim);
@@ -75,7 +75,7 @@ void velocity_grid_renderer::draw_gpu(grid<float> const& horizontal_velocity, gr
 
 	// 
 	error = cudaMemcpy2D(m_line_vertices.data(), sizeof(sf_line) * cols(), 
-						 m_line_vertex_buffer.buffer(), m_line_vertex_buffer.pitch(),
+						 m_line_vertex_buffer.data(), m_line_vertex_buffer.pitch(),
 						 sizeof(sf_line) * cols(), rows(), cudaMemcpyDeviceToHost);
 
 	target.draw(reinterpret_cast<sf::Vertex*>(m_line_vertices.data()), m_line_vertices.size(), sf::PrimitiveType::Lines);
