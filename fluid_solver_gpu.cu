@@ -1,4 +1,5 @@
 #include "fluid_solver_gpu.cuh"
+#include "kernel_launcher.hpp"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -333,35 +334,23 @@ void fluid_solver_gpu::set_corners(float * values_buffer, size_t rows, size_t co
 
 void fluid_solver_gpu::set_boundary_continuous(float* values_buffer, size_t rows, size_t cols)
 {
-  unsigned int boundary_block_dim = 64;
-  unsigned int boundary_grid_dim = static_cast<unsigned int>((std::max(cols, rows) + boundary_block_dim - 1) / boundary_block_dim);
-
-  set_boundary_continuous_kernel << <boundary_grid_dim, boundary_block_dim >> > (values_buffer, rows, cols);
+  kernel_launcher::launch_1d(&set_boundary_continuous_kernel<float>, std::max(cols, rows),
+                             values_buffer, rows, cols);
   cudaDeviceSynchronize();
-
-  //set_corners(values_buffer, rows, cols);
 }
 
 void fluid_solver_gpu::set_boundary_opposite_horizontal(float * values_buffer, size_t rows, size_t cols)
 {
-  unsigned int boundary_block_dim = 64;
-  unsigned int boundary_grid_dim = static_cast<unsigned int>((std::max(cols, rows) + boundary_block_dim - 1) / boundary_block_dim);
-
-  set_boundary_opposite_horizontal_kernel << <boundary_grid_dim, boundary_block_dim >> > (values_buffer, rows, cols);
+  kernel_launcher::launch_1d(&set_boundary_opposite_horizontal_kernel<float>, std::max(cols, rows),
+                             values_buffer, rows, cols);
   cudaDeviceSynchronize();
-
-  //set_corners(values_buffer, rows, cols);
 }
 
 void fluid_solver_gpu::set_boundary_opposite_vertical(float * values_buffer, size_t rows, size_t cols)
 {
-  unsigned int boundary_block_dim = 64;
-  unsigned int boundary_grid_dim = static_cast<unsigned int>((std::max(cols, rows) + boundary_block_dim - 1) / boundary_block_dim);
-
-  set_boundary_opposite_vertical_kernel << <boundary_grid_dim, boundary_block_dim >> > (values_buffer, rows, cols);
+  kernel_launcher::launch_1d(&set_boundary_opposite_vertical_kernel<float>, std::max(cols, rows),
+                             values_buffer, rows, cols);
   cudaDeviceSynchronize();
-
-  //set_corners(values_buffer, rows, cols);
 }
 
 void fluid_solver_gpu::add_sources(float* values_buffer,
@@ -370,12 +359,9 @@ void fluid_solver_gpu::add_sources(float* values_buffer,
 {
   cudaMemcpy(m_source_buffer, source_data, buffer_size(), cudaMemcpyHostToDevice);
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
-
   // Add the sources
-  add_sources_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_source_buffer, m_rows, m_cols, dt);
+  kernel_launcher::launch_2d(&add_sources_kernel<float>, m_cols, m_rows,
+                             values_buffer, m_source_buffer, m_rows, m_cols, dt);
   cudaDeviceSynchronize();
 }
 
@@ -388,10 +374,6 @@ void fluid_solver_gpu::diffuse(float* values_buffer,
   float* initial_values_buffer = m_temp_buffer_1;
   float* previous_values_buffer = m_temp_buffer_2;
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
-
   // First temporary buffer contains the initial values
   // Second temporary buffer contains the values of the previous iteration
   cudaMemcpy(initial_values_buffer, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
@@ -399,11 +381,10 @@ void fluid_solver_gpu::diffuse(float* values_buffer,
   {
     cudaMemcpy(previous_values_buffer, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
 
-    diffuse_iteration_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer,
-                                                                                                previous_values_buffer,
-                                                                                                initial_values_buffer,
-                                                                                                m_rows, m_cols,
-                                                                                                rate, dt);
+    kernel_launcher::launch_2d(&diffuse_iteration_kernel<float>, m_cols, m_rows,
+                               values_buffer, previous_values_buffer, initial_values_buffer,
+                               m_rows, m_cols,
+                               rate, dt);
     cudaDeviceSynchronize();
 
     set_boundary(values_buffer, m_rows, m_cols);
@@ -415,13 +396,8 @@ void fluid_solver_gpu::smooth(float * values_buffer)
   float* initial_values = m_temp_buffer_1;
   cudaMemcpy(m_temp_buffer_1, values_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
-
-  smooth_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer,
-                                                                                   initial_values,
-                                                                                   m_rows, m_cols);
+  kernel_launcher::launch_2d(&smooth_kernel<float>, m_cols, m_rows,
+                             values_buffer, initial_values, m_rows, m_cols);
 
   cudaDeviceSynchronize();
 }
@@ -438,29 +414,25 @@ void fluid_solver_gpu::advect(float * values_buffer,
 
   float dt0 = sqrt(m_rows * m_cols) * dt;
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
-
   if(trace)
   {
     cudaMemset(values_buffer, 0, buffer_size());
     cudaDeviceSynchronize();
 
-    advect_trace_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
-                                                                                           horizontal_velocity_buffer, vertical_velocity_buffer,
-                                                                                           m_rows, m_cols,
-                                                                                           dt0);
-
+    kernel_launcher::launch_2d(&advect_trace_kernel<float>, m_cols, m_rows,
+                               values_buffer, m_temp_buffer_1,
+                               horizontal_velocity_buffer, vertical_velocity_buffer,
+                               m_rows, m_cols,
+                               dt0);
     cudaDeviceSynchronize();
   }
   else
   {
-    advect_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (values_buffer, m_temp_buffer_1,
-                                                                                     horizontal_velocity_buffer, vertical_velocity_buffer,
-                                                                                     m_rows, m_cols,
-                                                                                     dt0);
-
+    kernel_launcher::launch_2d(&advect_kernel<float>, m_cols, m_rows,
+                               values_buffer, m_temp_buffer_1,
+                               horizontal_velocity_buffer, vertical_velocity_buffer,
+                               m_rows, m_cols,
+                               dt0);
     cudaDeviceSynchronize();
   }
 
@@ -478,16 +450,13 @@ void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * verti
 
   float h = 1.0f / sqrtf(m_rows * m_cols);
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((m_cols + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((m_rows + block_dim - 1) / block_dim);
-
-  calculate_divergence_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (divergence_buffer,
-                                                                                                 horizontal_velocity_buffer,
-                                                                                                 vertical_velocity_buffer,
-                                                                                                 m_rows,
-                                                                                                 m_cols,
-                                                                                                 h);
+  kernel_launcher::launch_2d(&calculate_divergence_kernel<float>, m_cols, m_rows,
+                             divergence_buffer,
+                             horizontal_velocity_buffer,
+                             vertical_velocity_buffer,
+                             m_rows,
+                             m_cols,
+                             h);
   cudaDeviceSynchronize();
   set_boundary_continuous(divergence_buffer, m_rows, m_cols);
 
@@ -496,22 +465,24 @@ void fluid_solver_gpu::project(float * horizontal_velocity_buffer, float * verti
   {
     cudaMemcpy(p_previous_buffer, p_buffer, buffer_size(), cudaMemcpyDeviceToDevice);
 
-    p_iteration_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (p_buffer,
-                                                                                          p_previous_buffer,
-                                                                                          divergence_buffer,
-                                                                                          m_rows,
-                                                                                          m_cols);
+    kernel_launcher::launch_2d(&p_iteration_kernel<float>, m_cols, m_rows,
+                               p_buffer,
+                               p_previous_buffer,
+                               divergence_buffer,
+                               m_rows,
+                               m_cols);
     cudaDeviceSynchronize();
 
     set_boundary_continuous(p_buffer, m_rows, m_cols);
   }
 
-  remove_p_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (horizontal_velocity_buffer,
-                                                                                     vertical_velocity_buffer,
-                                                                                     p_buffer,
-                                                                                     m_rows,
-                                                                                     m_cols,
-                                                                                     h);
+  kernel_launcher::launch_2d(&remove_p_kernel<float>, m_cols, m_rows,
+                             horizontal_velocity_buffer,
+                             vertical_velocity_buffer,
+                             p_buffer,
+                             m_rows,
+                             m_cols,
+                             h);
   cudaDeviceSynchronize();
 
   set_boundary_opposite_horizontal(horizontal_velocity_buffer, m_rows, m_cols);

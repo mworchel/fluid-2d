@@ -1,4 +1,5 @@
 #include "density_grid_renderer.cuh"
+#include "kernel_launcher.hpp"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -39,25 +40,21 @@ density_grid_renderer::density_grid_renderer(size_t const _rows, size_t const _c
 }
 
 density_grid_renderer::~density_grid_renderer()
-{
-}
+{}
 
 void density_grid_renderer::draw(sf::RenderTarget& target, grid<float> const& grid, color_multipliers const& multipliers)
 {
   // Copy the grid to the buffer
   auto error = cudaMemcpy2D(m_grid_buffer.buffer(), m_grid_buffer.pitch(), grid.data(), cols() * sizeof(float), cols() * sizeof(float), rows(), cudaMemcpyHostToDevice);
 
-  unsigned int block_dim = 32;
-  unsigned int grid_dim_x = static_cast<unsigned int>((cols() + block_dim - 1) / block_dim);
-  unsigned int grid_dim_y = static_cast<unsigned int>((rows() + block_dim - 1) / block_dim);
-
-  grid_to_image_kernel << <dim3(grid_dim_x, grid_dim_y), dim3(block_dim, block_dim) >> > (m_grid_buffer.accessor(), m_image_buffer.accessor(), rows(), cols(), multipliers);
+  kernel_launcher::launch_2d(&grid_to_image_kernel<float>, cols(), rows(),
+                             m_grid_buffer.accessor(), m_image_buffer.accessor(), rows(), cols(), multipliers);
   error = cudaDeviceSynchronize();
 
   // 
   error = cudaMemcpy2D(m_image.data(), sizeof(sf_pixel) * cols(), m_image_buffer.buffer(), m_image_buffer.pitch(), sizeof(sf_pixel) * cols(), rows(), cudaMemcpyDeviceToHost);
   m_texture.update(reinterpret_cast<uint8_t*>(m_image.data()), static_cast<unsigned int>(cols()), static_cast<unsigned int>(rows()), 0U, 0U);
-  
+
   sf::Sprite sprite{ m_texture };
   sprite.setScale(target.getSize().x / sprite.getLocalBounds().width, target.getSize().y / sprite.getLocalBounds().height);
   target.draw(sprite);
