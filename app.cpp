@@ -52,6 +52,16 @@ void app::handle_event(sf::Event const & event)
     {
       m_simulation.reset();
     }
+
+    if(event.key.code == sf::Keyboard::V)
+    {
+      m_input_state.draw_velocity = !m_input_state.draw_velocity;
+    }
+
+    if(event.key.code == sf::Keyboard::D)
+    {
+      m_input_state.draw_density = !m_input_state.draw_density;
+    }
   }
 
   if(event.type == sf::Event::MouseButtonPressed)
@@ -146,6 +156,6 @@ void app::update()
 void app::draw()
 {
   m_window.clear();
-  m_simulation.draw(m_window);
+  m_simulation.draw(m_window, m_input_state.draw_density, m_input_state.draw_velocity);
   m_window.display();
 }
