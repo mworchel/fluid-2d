@@ -44,11 +44,6 @@ public:
     return element_accessor<T>{ m_data, sizeof(T) * width() };
   }
 
-  size_t byte_width() const
-  {
-    return sizeof(T) * width();
-  }
-
   size_t byte_size() const
   {
     return sizeof(T) * width() * height();

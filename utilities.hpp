@@ -2,6 +2,7 @@
 
 #include "grid.hpp"
 #include "pitched_buffer.hpp"
+#include "linear_buffer.hpp"
 
 #include <cuda_runtime.h>
 
@@ -30,4 +31,22 @@ inline void copy(pitched_buffer<T>& destionation, pitched_buffer<T> const& sourc
                source.data(), source.pitch(),
                destionation.byte_width(), destionation.height(), 
                cudaMemcpyDeviceToDevice);
+}
+
+template<typename T>
+inline void copy(linear_buffer<T>& destionation_buffer, grid<T> const& source_grid)
+{
+  cudaMemcpy(destionation_buffer.data(), source_grid.data(), destionation_buffer.byte_size(), cudaMemcpyHostToDevice);
+}
+
+template<typename T>
+inline void copy(grid<T>& grid, linear_buffer<T> const& buffer)
+{
+  cudaMemcpy(grid.data(), buffer.data(), sizeof(T) * grid.cols() * grid.rows(), cudaMemcpyDeviceToHost);
+}
+
+template<typename T>
+inline void copy(linear_buffer<T>& destionation, linear_buffer<T> const& source)
+{
+  cudaMemcpy(destionation.data(), source.data(), destionation.byte_size(), cudaMemcpyDeviceToDevice);
 }

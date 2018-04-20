@@ -295,30 +295,30 @@ void fluid_solver_gpu::solve(grid<float>& density_grid,
   copy(vertical_velocity_grid, m_vertical_velocity_buffer);
 }
 
-void fluid_solver_gpu::set_boundary_continuous(pitched_buffer<float>& values_buffer, size_t rows, size_t cols)
+void fluid_solver_gpu::set_boundary_continuous(linear_buffer<float>& values_buffer, size_t rows, size_t cols)
 {
   kernel_launcher::launch_1d(&set_boundary_continuous_kernel<float>, std::max(cols, rows),
                              values_buffer.accessor(), rows, cols);
   cudaDeviceSynchronize();
 }
 
-void fluid_solver_gpu::set_boundary_opposite_horizontal(pitched_buffer<float>& values_buffer, size_t rows, size_t cols)
+void fluid_solver_gpu::set_boundary_opposite_horizontal(linear_buffer<float>& values_buffer, size_t rows, size_t cols)
 {
   kernel_launcher::launch_1d(&set_boundary_opposite_horizontal_kernel<float>, std::max(cols, rows),
                              values_buffer.accessor(), rows, cols);
   cudaDeviceSynchronize();
 }
 
-void fluid_solver_gpu::set_boundary_opposite_vertical(pitched_buffer<float>& values_buffer, size_t rows, size_t cols)
+void fluid_solver_gpu::set_boundary_opposite_vertical(linear_buffer<float>& values_buffer, size_t rows, size_t cols)
 {
   kernel_launcher::launch_1d(&set_boundary_opposite_vertical_kernel<float>, std::max(cols, rows),
                              values_buffer.accessor(), rows, cols);
   cudaDeviceSynchronize();
 }
 
-void fluid_solver_gpu::add_sources(pitched_buffer<float>& values_buffer,
-                                   grid<float> const      source_grid,
-                                   float const            dt)
+void fluid_solver_gpu::add_sources(linear_buffer<float>& values_buffer,
+                                   grid<float> const  source_grid,
+                                   float const        dt)
 {
   copy(m_source_buffer, source_grid);
 
@@ -329,14 +329,14 @@ void fluid_solver_gpu::add_sources(pitched_buffer<float>& values_buffer,
   cudaDeviceSynchronize();
 }
 
-void fluid_solver_gpu::diffuse(pitched_buffer<float>& values_buffer,
-                               std::function<void(pitched_buffer<float>&, size_t, size_t)> set_boundary,
+void fluid_solver_gpu::diffuse(linear_buffer<float>& values_buffer,
+                               std::function<void(linear_buffer<float>&, size_t, size_t)> set_boundary,
                                float const rate,
                                float const dt,
                                size_t iteration_count)
 {
-  pitched_buffer<float>& initial_values_buffer  = m_temp_buffer_1;
-  pitched_buffer<float>& previous_values_buffer = m_temp_buffer_2;
+  linear_buffer<float>& initial_values_buffer  = m_temp_buffer_1;
+  linear_buffer<float>& previous_values_buffer = m_temp_buffer_2;
 
   // First temporary buffer contains the initial values
   // Second temporary buffer contains the values of the previous iteration
@@ -355,9 +355,9 @@ void fluid_solver_gpu::diffuse(pitched_buffer<float>& values_buffer,
   }
 }
 
-void fluid_solver_gpu::smooth(pitched_buffer<float>& values_buffer)
+void fluid_solver_gpu::smooth(linear_buffer<float>& values_buffer)
 {
-  pitched_buffer<float>& initial_values = m_temp_buffer_1;
+  linear_buffer<float>& initial_values = m_temp_buffer_1;
 
   copy(initial_values, values_buffer);
 
@@ -367,14 +367,14 @@ void fluid_solver_gpu::smooth(pitched_buffer<float>& values_buffer)
   cudaDeviceSynchronize();
 }
 
-void fluid_solver_gpu::advect(pitched_buffer<float>& values_buffer,
-                              pitched_buffer<float> const& horizontal_velocity_buffer,
-                              pitched_buffer<float> const& vertical_velocity_buffer,
-                              std::function<void(pitched_buffer<float>&, size_t, size_t)> set_boundary,
+void fluid_solver_gpu::advect(linear_buffer<float>& values_buffer,
+                              linear_buffer<float> const& horizontal_velocity_buffer,
+                              linear_buffer<float> const& vertical_velocity_buffer,
+                              std::function<void(linear_buffer<float>&, size_t, size_t)> set_boundary,
                               float const dt,
                               bool trace)
 {
-  pitched_buffer<float>& initial_values = m_temp_buffer_1;
+  linear_buffer<float>& initial_values = m_temp_buffer_1;
   copy(initial_values, values_buffer);
 
   float dt0 = sqrt(m_rows * m_cols) * dt;
@@ -404,12 +404,12 @@ void fluid_solver_gpu::advect(pitched_buffer<float>& values_buffer,
   set_boundary(values_buffer, m_rows, m_cols);
 }
 
-void fluid_solver_gpu::project(pitched_buffer<float>& horizontal_velocity_buffer, 
-                               pitched_buffer<float>& vertical_velocity_buffer,
+void fluid_solver_gpu::project(linear_buffer<float>& horizontal_velocity_buffer,
+                               linear_buffer<float>& vertical_velocity_buffer,
                                size_t iteration_count)
 {
-  pitched_buffer<float>& divergence_buffer = m_temp_buffer_1;
-  pitched_buffer<float>& p_buffer = m_temp_buffer_2;
+  linear_buffer<float>& divergence_buffer = m_temp_buffer_1;
+  linear_buffer<float>& p_buffer = m_temp_buffer_2;
   divergence_buffer.clear(0);
   p_buffer.clear(0);
   cudaDeviceSynchronize();
@@ -426,7 +426,7 @@ void fluid_solver_gpu::project(pitched_buffer<float>& horizontal_velocity_buffer
   cudaDeviceSynchronize();
   set_boundary_continuous(divergence_buffer, m_rows, m_cols);
 
-  pitched_buffer<float>& p_previous_buffer = m_temp_buffer_3;
+  linear_buffer<float>& p_previous_buffer = m_temp_buffer_3;
   for(size_t k = 0; k < iteration_count; ++k)
   {
     copy(p_previous_buffer, p_buffer);
