@@ -4,7 +4,7 @@ using namespace std::chrono_literals;
 
 app::app(int arg_count, char ** args)
   : m_window{ sf::VideoMode{ 800, 800 }, "Simulation" }
-  , m_simulation{ app::parse_simulation_config(arg_count, args) }
+  , m_simulation{ parse_simulation_config(arg_count, args) }
 {
   m_time_state.simulation_dt = 20ms;
 }
@@ -30,6 +30,7 @@ void app::run()
 
 simulation_config app::parse_simulation_config(int arg_count, char ** args)
 {
+  // TODO: Parse the command line options
   simulation_config config;
   config.width = 800U;
   config.height = 800U;
