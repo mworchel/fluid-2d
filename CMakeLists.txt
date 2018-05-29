@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
 project(fluid-2d LANGUAGES CXX CUDA)
 
-file(GLOB APP_SOURCES "*.hpp" "*.cpp" "*.cuh" "*.cu") 
+file(GLOB APP_SOURCES "./src/*.hpp" "./src/*.cpp" "./src/*.cuh" "./src/*.cu") 
 
 add_executable(fluid-2d-app ${APP_SOURCES})
 
