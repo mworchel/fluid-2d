@@ -14,7 +14,7 @@ void fluid_solver_cpu::solve(grid<float>& density_grid,
     // Solve the density related terms
     add_sources(density_grid, density_source_grid, dt);
     diffuse(density_grid, &fluid_solver_cpu::set_boundary_continuous, diffusion_rate, dt, 20U);
-    advect(density_grid, horizontal_velocity_grid, vertical_velocity_grid, &fluid_solver_cpu::set_boundary_continuous, dt, false);
+    advect(density_grid, horizontal_velocity_grid, vertical_velocity_grid, &fluid_solver_cpu::set_boundary_continuous, dt, true);
 
     // Solve the velocity related terms
     add_sources(horizontal_velocity_grid, horizontal_velocity_source_grid, dt);
@@ -29,121 +29,150 @@ void fluid_solver_cpu::solve(grid<float>& density_grid,
     project(horizontal_velocity_grid, vertical_velocity_grid, 20U);
 }
 
-void fluid_solver_cpu::set_boundary_continuous(grid<float>& _grid) {
-    for(size_t i = 0; i < _grid.rows(); ++i) {
-        _grid(i, 0) = _grid(i, 1);
-        _grid(i, _grid.cols() - 1) = _grid(i, _grid.cols() - 2);
+void fluid_solver_cpu::set_boundary_continuous(grid<float>& grid_) {
+    for(size_t i = 0; i < grid_.rows(); ++i) {
+        grid_(i, 0) = grid_(i, 1);
+        grid_(i, grid_.cols() - 1) = grid_(i, grid_.cols() - 2);
     }
 
-    for(size_t j = 0; j < _grid.cols(); ++j) {
-        _grid(0, j) = _grid(1, j);
-        _grid(_grid.rows() - 1, j) = _grid(_grid.rows() - 2, j);
+    for(size_t j = 0; j < grid_.cols(); ++j) {
+        grid_(0, j) = grid_(1, j);
+        grid_(grid_.rows() - 1, j) = grid_(grid_.rows() - 2, j);
     }
 
-    _grid(0, 0) = 0.5f * (_grid(0, 1) + _grid(1, 0));
-    _grid(0, _grid.cols() - 1) = 0.5f * (_grid(0, _grid.cols() - 2) + _grid(1, _grid.cols() - 1));
-    _grid(_grid.rows() - 1, 0) = 0.5f * (_grid(_grid.rows() - 1, 1) + _grid(_grid.rows() - 2, 0));
-    _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
+    grid_(0, 0) = 0.5f * (grid_(0, 1) + grid_(1, 0));
+    grid_(0, grid_.cols() - 1) = 0.5f * (grid_(0, grid_.cols() - 2) + grid_(1, grid_.cols() - 1));
+    grid_(grid_.rows() - 1, 0) = 0.5f * (grid_(grid_.rows() - 1, 1) + grid_(grid_.rows() - 2, 0));
+    grid_(grid_.rows() - 1, grid_.cols() - 1) = 0.5f * (grid_(grid_.rows() - 1, grid_.cols() - 2) + grid_(grid_.rows() - 2, grid_.cols() - 1));
 }
 
-void fluid_solver_cpu::set_boundary_opposite_horizontal(grid<float>& _grid) {
-    for(size_t i = 0; i < _grid.rows(); ++i) {
-        _grid(i, 0) = -_grid(i, 1);
-        _grid(i, _grid.cols() - 1) = -_grid(i, _grid.cols() - 2);
+void fluid_solver_cpu::set_boundary_opposite_horizontal(grid<float>& grid_) {
+    for(size_t i = 0; i < grid_.rows(); ++i) {
+        grid_(i, 0) = -grid_(i, 1);
+        grid_(i, grid_.cols() - 1) = -grid_(i, grid_.cols() - 2);
     }
 
-    for(size_t j = 0; j < _grid.cols(); ++j) {
-        _grid(0, j) = _grid(1, j);
-        _grid(_grid.rows() - 1, j) = _grid(_grid.rows() - 2, j);
+    for(size_t j = 0; j < grid_.cols(); ++j) {
+        grid_(0, j) = grid_(1, j);
+        grid_(grid_.rows() - 1, j) = grid_(grid_.rows() - 2, j);
     }
 
-    _grid(0, 0) = 0.5f * (_grid(0, 1) + _grid(1, 0));
-    _grid(0, _grid.cols() - 1) = 0.5f * (_grid(0, _grid.cols() - 2) + _grid(1, _grid.cols() - 1));
-    _grid(_grid.rows() - 1, 0) = 0.5f * (_grid(_grid.rows() - 1, 1) + _grid(_grid.rows() - 2, 0));
-    _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
+    grid_(0, 0) = 0.5f * (grid_(0, 1) + grid_(1, 0));
+    grid_(0, grid_.cols() - 1) = 0.5f * (grid_(0, grid_.cols() - 2) + grid_(1, grid_.cols() - 1));
+    grid_(grid_.rows() - 1, 0) = 0.5f * (grid_(grid_.rows() - 1, 1) + grid_(grid_.rows() - 2, 0));
+    grid_(grid_.rows() - 1, grid_.cols() - 1) = 0.5f * (grid_(grid_.rows() - 1, grid_.cols() - 2) + grid_(grid_.rows() - 2, grid_.cols() - 1));
 }
 
-void fluid_solver_cpu::set_boundary_opposite_vertical(grid<float>& _grid) {
+void fluid_solver_cpu::set_boundary_opposite_vertical(grid<float>& grid_) {
 
-    for(size_t j = 0; j < _grid.cols(); ++j) {
-        _grid(0, j) = -_grid(1, j);
-        _grid(_grid.rows() - 1, j) = -_grid(_grid.rows() - 2, j);
+    for(size_t j = 0; j < grid_.cols(); ++j) {
+        grid_(0, j) = -grid_(1, j);
+        grid_(grid_.rows() - 1, j) = -grid_(grid_.rows() - 2, j);
     }
 
-    for(size_t i = 0; i < _grid.rows(); ++i) {
-        _grid(i, 0) = _grid(i, 1);
-        _grid(i, _grid.cols() - 1) = _grid(i, _grid.cols() - 2);
+    for(size_t i = 0; i < grid_.rows(); ++i) {
+        grid_(i, 0) = grid_(i, 1);
+        grid_(i, grid_.cols() - 1) = grid_(i, grid_.cols() - 2);
     }
 
-    _grid(0, 0) = 0.5f * (_grid(0, 1) + _grid(1, 0));
-    _grid(0, _grid.cols() - 1) = 0.5f * (_grid(0, _grid.cols() - 2) + _grid(1, _grid.cols() - 1));
-    _grid(_grid.rows() - 1, 0) = 0.5f * (_grid(_grid.rows() - 1, 1) + _grid(_grid.rows() - 2, 0));
-    _grid(_grid.rows() - 1, _grid.cols() - 1) = 0.5f * (_grid(_grid.rows() - 1, _grid.cols() - 2) + _grid(_grid.rows() - 2, _grid.cols() - 1));
+    grid_(0, 0) = 0.5f * (grid_(0, 1) + grid_(1, 0));
+    grid_(0, grid_.cols() - 1) = 0.5f * (grid_(0, grid_.cols() - 2) + grid_(1, grid_.cols() - 1));
+    grid_(grid_.rows() - 1, 0) = 0.5f * (grid_(grid_.rows() - 1, 1) + grid_(grid_.rows() - 2, 0));
+    grid_(grid_.rows() - 1, grid_.cols() - 1) = 0.5f * (grid_(grid_.rows() - 1, grid_.cols() - 2) + grid_(grid_.rows() - 2, grid_.cols() - 1));
 }
 
-void fluid_solver_cpu::add_sources(grid<float>& _grid,
+void fluid_solver_cpu::add_sources(grid<float>& grid_,
                                    grid<float> const& source_grid,
                                    float const dt) {
-    for(size_t i = 1; i < _grid.rows() - 1; ++i) {
-        for(size_t j = 1; j < _grid.cols() - 1; ++j) {
-            _grid(i, j) += dt * source_grid(i, j);
+    for(size_t i = 1; i < grid_.rows() - 1; ++i) {
+        for(size_t j = 1; j < grid_.cols() - 1; ++j) {
+            grid_(i, j) += dt * source_grid(i, j);
         }
     }
 }
 
-void fluid_solver_cpu::diffuse(grid<float>& _grid,
+void fluid_solver_cpu::diffuse(grid<float>& grid_,
                                std::function<void(grid<float>&)> set_boundary,
                                float const diffusion_rate,
                                float const dt,
                                size_t const iteration_count) {
-    float a = dt * static_cast<float>(_grid.rows() * _grid.cols()) *diffusion_rate;
+    float a = dt * static_cast<float>(grid_.rows() * grid_.cols()) *diffusion_rate;
 
-    grid<float> initial_grid = _grid;
+    grid<float> initial_grid = grid_;
 
     for(size_t k = 0; k < iteration_count; ++k) {
-        for(size_t i = 1; i < _grid.rows() - 1; ++i) {
-            for(size_t j = 1; j < _grid.cols() - 1; ++j) {
-                _grid(i, j) = (initial_grid(i, j) + a * (_grid(i - 1, j) + _grid(i + 1, j) +
-                                                         _grid(i, j - 1) + _grid(i, j + 1))) / (1.f + 4.f * a);
+        for(size_t i = 1; i < grid_.rows() - 1; ++i) {
+            for(size_t j = 1; j < grid_.cols() - 1; ++j) {
+                grid_(i, j) = (initial_grid(i, j) + a * (grid_(i - 1, j) + grid_(i + 1, j) +
+                                                         grid_(i, j - 1) + grid_(i, j + 1))) / (1.f + 4.f * a);
             }
         }
 
-        set_boundary(_grid);
+        set_boundary(grid_);
     }
 }
 
-void fluid_solver_cpu::advect(grid<float>& _grid,
+void fluid_solver_cpu::advect(grid<float>& grid_,
                               grid<float> const& horizontal_velocity_grid,
                               grid<float> const& vertical_velocity_grid,
                               std::function<void(grid<float>&)> set_boundary,
                               float const dt,
                               bool trace) {
-    grid<float> initial_grid = _grid;
+    grid<float> initial_grid = grid_;
+    size_t rows = grid_.rows();
+    size_t cols = grid_.cols();
 
-    float dt0 = sqrt(_grid.rows() * _grid.cols()) * dt;
+    float dt0 = sqrt(rows * cols) * dt;
+    if(trace) {
+        std::fill(std::begin(grid_), std::end(grid_), 0.f);
 
-    for(size_t i = 1; i < _grid.rows() - 1; ++i) {
-        for(size_t j = 1; j < _grid.cols() - 1; ++j) {
-            float x = j - dt0 * horizontal_velocity_grid(i, j);
-            float y = i - dt0 * vertical_velocity_grid(i, j);
-            x = std::max(1.5f, std::min(_grid.cols() - 1.5f, x));
-            y = std::max(1.5f, std::min(_grid.rows() - 1.5f, y));
+        for(size_t i = 1; i < rows - 1; ++i) {
+            for(size_t j = 1; j < cols - 1; ++j) {
+                float x = j + dt0 * horizontal_velocity_grid(i, j);
+                float y = i + dt0 * vertical_velocity_grid(i, j);
 
-            size_t j0 = static_cast<size_t>(x);
-            size_t i0 = static_cast<size_t>(y);
-            size_t j1 = j0 + 1;
-            size_t i1 = i0 + 1;
-            float s0 = x - j0;
-            float s1 = 1 - s0;
-            float s2 = y - i0;
-            float s3 = 1 - s2;
+                if(x < 0.5f || x > cols - 1.5f || y < 0.5f || y > rows - 1.5f) continue;
 
-            _grid(i, j) = s3 * (s1 * initial_grid(i0, j0) + s0 * initial_grid(i0, j1)) +
-                s2 * (s1 * initial_grid(i1, j0) + s0 * initial_grid(i1, j1));
+                size_t j0 = static_cast<size_t>(x);
+                size_t i0 = static_cast<size_t>(y);
+                size_t j1 = j0 + 1;
+                size_t i1 = i0 + 1;
+
+                float s0 = x - j0;
+                float s1 = 1 - s0;
+                float s2 = y - i0;
+                float s3 = 1 - s2;
+
+                grid_(i0, j0) += s1 * s3 * initial_grid(i, j);
+                grid_(i1, j0) += s1 * s2 * initial_grid(i, j);
+                grid_(i0, j1) += s0 * s3 * initial_grid(i, j);
+                grid_(i1, j1) += s0 * s2 * initial_grid(i, j);
+            }
+        }
+    } else {
+        for(size_t i = 1; i < rows - 1; ++i) {
+            for(size_t j = 1; j < cols - 1; ++j) {
+                float x = j - dt0 * horizontal_velocity_grid(i, j);
+                float y = i - dt0 * vertical_velocity_grid(i, j);
+                x = std::max(1.5f, std::min(cols - 1.5f, x));
+                y = std::max(1.5f, std::min(rows - 1.5f, y));
+
+                size_t j0 = static_cast<size_t>(x);
+                size_t i0 = static_cast<size_t>(y);
+                size_t j1 = j0 + 1;
+                size_t i1 = i0 + 1;
+                float s0 = x - j0;
+                float s1 = 1 - s0;
+                float s2 = y - i0;
+                float s3 = 1 - s2;
+
+                grid_(i, j) = s3 * (s1 * initial_grid(i0, j0) + s0 * initial_grid(i0, j1)) +
+                    s2 * (s1 * initial_grid(i1, j0) + s0 * initial_grid(i1, j1));
+            }
         }
     }
 
-    set_boundary(_grid);
+    set_boundary(grid_);
 }
 
 void fluid_solver_cpu::project(grid<float>& horizontal_velocity_grid, grid<float>& vertical_velocity_grid, size_t const iteration_count) {

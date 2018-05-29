@@ -21,23 +21,23 @@ public:
                float const dt) override;
 
 private:
-    static void set_boundary_continuous(grid<float>& _grid);
+    static void set_boundary_continuous(grid<float>& grid_);
 
-    static void set_boundary_opposite_horizontal(grid<float>& _grid);
+    static void set_boundary_opposite_horizontal(grid<float>& grid_);
 
-    static void set_boundary_opposite_vertical(grid<float>& _grid);
+    static void set_boundary_opposite_vertical(grid<float>& grid_);
 
-    void add_sources(grid<float>& _grid,
+    void add_sources(grid<float>& grid_,
                      grid<float> const& source_grid,
                      float const dt);
 
-    void diffuse(grid<float>& _grid,
+    void diffuse(grid<float>& grid_,
                  std::function<void(grid<float>&)> set_boundary,
                  float const rate,
                  float const dt,
                  size_t const iteration_count);
 
-    void advect(grid<float>& _grid,
+    void advect(grid<float>& grid_,
                 grid<float> const& horizontal_velocity_grid,
                 grid<float> const& vertical_velocity_grid,
                 std::function<void(grid<float>&)> set_boundary,
