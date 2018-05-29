@@ -4,6 +4,9 @@
 
 #include <cuda_runtime.h>
 
+/**
+ * Representation of a two-dimensional pitched GPU buffer
+ */
 template<typename T>
 class pitched_buffer : public gpu_buffer<T> {
 public:

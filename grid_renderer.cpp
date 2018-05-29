@@ -5,6 +5,7 @@ bool grid_renderer::coordinates_to_cell(float const x, float const y, const sf::
         return false;
     }
 
+    // The grid is assumed to be stretched to the size of the target
     auto target_size = target.getSize();
     i = static_cast<size_t>(m_rows * (y / target_size.y));
     j = static_cast<size_t>(m_cols * (x / target_size.x));

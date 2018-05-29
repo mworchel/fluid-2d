@@ -25,7 +25,7 @@ void app::run() {
 }
 
 simulation_config app::parse_simulation_config(int arg_count, char ** args) {
-  // TODO: Parse the command line options
+    // TODO: Parse the command line options
     simulation_config config;
     config.width = 800U;
     config.height = 800U;
@@ -84,21 +84,21 @@ void app::handle_event(sf::Event const & event) {
         }
 
         if(event.mouseButton.button == sf::Mouse::Right) {
-          //m_input_state.remove_density = false;
             m_source_state.add_velocity = false;
         }
     }
 }
 
 void app::update() {
-  // Perform simulation with the fixed simulation_dt timestep after at least simulation_dt time has passed
-    auto finish_time = std::chrono::steady_clock::now();
-    auto elapsed = finish_time - m_time_state.start_time;
-    m_time_state.start_time = finish_time;
+    // Perform simulation with the fixed simulation_dt timestep after at least simulation_dt time has passed
+    auto current_time = std::chrono::steady_clock::now();
+    auto elapsed = current_time - m_time_state.start_time;
+    m_time_state.start_time = current_time;
     m_time_state.elapsed_accumulated = m_time_state.elapsed_accumulated + elapsed;
     if(m_time_state.elapsed_accumulated >= m_time_state.simulation_dt) {
         m_time_state.elapsed_accumulated -= m_time_state.simulation_dt;
 
+        // Add density to the position of the current manipulation point
         if(m_source_state.add_density) {
             size_t i;
             size_t j;
@@ -107,6 +107,7 @@ void app::update() {
             }
         }
 
+        // Add velocity to the position of the current manipulation point in direction of the input movement
         if(m_source_state.add_velocity) {
             size_t i;
             size_t j;

@@ -27,6 +27,7 @@ simulation::simulation(simulation_config const& config)
 }
 
 void simulation::reset() {
+    // Clear the density and velocity grid
     std::fill(std::begin(m_density_grid), std::end(m_density_grid), 0.f);
     std::fill(std::begin(m_horizontal_velocity_grid), std::end(m_horizontal_velocity_grid), 0.f);
     std::fill(std::begin(m_vertical_velocity_grid), std::end(m_vertical_velocity_grid), 0.f);
@@ -37,8 +38,7 @@ bool simulation::to_density_cell(float x, float y, const sf::RenderTarget & targ
 }
 
 bool simulation::to_velocity_cell(float const x, float const y, sf::RenderTarget const & target, size_t & i, size_t & j) {
-  // TODO: Use velocity renderer
-    return m_density_grid_renderer.coordinates_to_cell(x, y, target, i, j);
+    return m_velocity_grid_renderer.coordinates_to_cell(x, y, target, i, j);
 }
 
 void simulation::add_density_source(size_t const i, size_t const j, float const value) {
@@ -58,7 +58,7 @@ void simulation::update(const std::chrono::duration<float>& dt) {
                     m_config.viscosity,
                     dt.count());
 
-    // Clear the source grid, since now all sources have been incorporated in the solve step
+    // Clear the source grid, since the sources have been considered in the solve step
     std::fill(std::begin(m_density_source_grid), std::end(m_density_source_grid), 0.0f);
     std::fill(std::begin(m_horizontal_velocity_source_grid), std::end(m_horizontal_velocity_source_grid), 0.0f);
     std::fill(std::begin(m_vertical_velocity_source_grid), std::end(m_vertical_velocity_source_grid), 0.0f);
@@ -69,5 +69,5 @@ void simulation::draw(sf::RenderTarget& target, color_multipliers const& density
         m_density_grid_renderer.draw(target, m_density_grid, density_color_multipliers);
 
     if(draw_velocity)
-        m_velocity_grid_renderer.draw(m_horizontal_velocity_grid, m_vertical_velocity_grid, target);
+        m_velocity_grid_renderer.draw(target, m_horizontal_velocity_grid, m_vertical_velocity_grid);
 }

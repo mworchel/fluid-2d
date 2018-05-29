@@ -6,6 +6,9 @@
 
 #include <functional>
 
+/**
+ * Fluid solver implemented on the GPU using CUDA.
+ */
 class fluid_solver_gpu : public fluid_solver {
 public:
     fluid_solver_gpu(size_t const rows, size_t const cols);
@@ -30,14 +33,14 @@ private:
     static void set_boundary_opposite_vertical(linear_buffer<float>& values_buffer, size_t rows, size_t cols);
 
     void add_sources(linear_buffer<float>& values_buffer,
-                     grid<float> const  source_grid,
-                     float const        dt);
+                     grid<float> const source_grid,
+                     float const dt);
 
     void diffuse(linear_buffer<float>& values_buffer,
                  std::function<void(linear_buffer<float>&, size_t, size_t)> set_boundary,
                  float const rate,
                  float const dt,
-                 size_t iteration_count);
+                 size_t const iteration_count);
 
     void smooth(linear_buffer<float>& values_buffer);
 
@@ -50,7 +53,7 @@ private:
 
     void project(linear_buffer<float>& horizontal_velocity_buffer,
                  linear_buffer<float>& vertical_velocity_buffer,
-                 size_t iteration_count);
+                 size_t const iteration_count);
 
     inline size_t buffer_size() {
         return sizeof(float) * m_rows * m_cols;

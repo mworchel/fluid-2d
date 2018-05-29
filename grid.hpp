@@ -2,14 +2,16 @@
 
 #include <vector>
 
+/**
+ * Representation of a two-dimensional grid of values.
+ */
 template<typename T>
 class grid {
 public:
     grid(size_t rows, size_t cols, T initial_value)
         : m_rows(rows)
         , m_cols(cols)
-        , m_data(rows * cols, initial_value)
-        , m_initial_value(initial_value) {}
+        , m_data(rows * cols, initial_value) {}
 
     size_t rows() const {
         return m_rows;
@@ -27,12 +29,18 @@ public:
         return m_data.data();
     }
 
-    T operator() (const size_t y, const size_t x) const {
-        return m_data[y * m_cols + x];
+    /**
+     * Access the grid value at row i and column j.
+     */
+    T operator() (const size_t i, const size_t j) const {
+        return m_data[i * m_cols + j];
     }
 
-    T& operator() (const size_t y, const size_t x) {
-        return m_data[y * m_cols + x];
+    /**
+    * Access the grid value at row i and column j.
+    */
+    T& operator() (const size_t i, const size_t j) {
+        return m_data[i * m_cols + j];
     }
 
     auto begin() {
@@ -52,7 +60,6 @@ public:
     }
 
 private:
-    T              m_initial_value;
     size_t         m_rows;
     size_t         m_cols;
     std::vector<T> m_data;

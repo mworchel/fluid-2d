@@ -2,6 +2,9 @@
 
 #include <cuda_runtime.h>
 
+/**
+ * Class which allows straight forward access to a GPU buffer in cuda code.
+ */
 template<typename T>
 class element_accessor {
 public:
@@ -9,25 +12,28 @@ public:
         : m_buffer_data(buffer_data)
         , m_pitch(pitch) {}
 
-    inline __device__ T& at(size_t x, size_t y) {
+    inline __device__ T& at(size_t const x, size_t const y) {
         return *(reinterpret_cast<T*>(reinterpret_cast<char*>(m_buffer_data) + y * m_pitch) + x);
     }
 
-    inline __device__ T const& at(size_t x, size_t y) const {
+    inline __device__ T const& at(size_t const x, size_t const y) const {
         return *(reinterpret_cast<T*>(reinterpret_cast<char*>(m_buffer_data) + y * m_pitch) + x);
     }
 
 private:
-    T* m_buffer_data;
+    T*     m_buffer_data;
     size_t m_pitch;
 };
 
+/**
+ * Representation of two-dimensional data in GPU memory.
+ */
 template<typename T>
 class gpu_buffer {
 public:
     using value_type = T;
 
-    gpu_buffer(size_t width, size_t height)
+    gpu_buffer(size_t const width, size_t const height)
         : m_width(width)
         , m_height(height) {}
 

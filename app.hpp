@@ -8,7 +8,7 @@
 #include <memory>
 
 /**
- *
+ * Class representing the fluid simulation application.
  */
 class app {
 public:
@@ -17,12 +17,18 @@ public:
     void run();
 
 private:
+    /**
+     * Time-related state.
+     */
     struct time_state {
         std::chrono::milliseconds                          simulation_dt;
         std::chrono::time_point<std::chrono::steady_clock> start_time;
         std::chrono::nanoseconds                           elapsed_accumulated;
     };
 
+    /**
+     * Input-related state (mouse movement, etc.).
+     */
     struct input_state {
         float movement_direction_x{ 0.f };
         float movement_direction_y{ 0.f };
@@ -30,11 +36,17 @@ private:
         float manipulation_point_y{ 0.f };
     };
 
+    /**
+     * State related to currently active sources.
+     */
     struct source_state {
         bool  add_density{ false };
         bool  add_velocity{ false };
     };
 
+    /**
+     * State related to drawing.
+     */
     struct draw_state {
         bool              draw_density{ true };
         bool              draw_velocity{ false };
@@ -44,11 +56,13 @@ private:
 
     static simulation_config parse_simulation_config(int arg_count, char** args);
 
+
     void handle_event(sf::Event const& event);
 
     void update();
 
     void draw();
+
 
     sf::RenderWindow m_window;
     time_state       m_time_state;

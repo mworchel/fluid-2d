@@ -5,6 +5,9 @@
 
 #include <functional>
 
+/**
+ * Fluid solver implemented as single-threaded on the CPU.
+ */
 class fluid_solver_cpu : public fluid_solver {
 public:
     void solve(grid<float>& density_grid,
@@ -31,14 +34,17 @@ private:
     void diffuse(grid<float>& _grid,
                  std::function<void(grid<float>&)> set_boundary,
                  float const rate,
-                 float const dt);
+                 float const dt,
+                 size_t const iteration_count);
 
     void advect(grid<float>& _grid,
                 grid<float> const& horizontal_velocity_grid,
                 grid<float> const& vertical_velocity_grid,
                 std::function<void(grid<float>&)> set_boundary,
-                float const dt);
+                float const dt,
+                bool trace);
 
     void project(grid<float>& horizontal_velocity_grid,
-                 grid<float>& vertical_velocity_grid);
+                 grid<float>& vertical_velocity_grid,
+                 size_t const iteration_count);
 };

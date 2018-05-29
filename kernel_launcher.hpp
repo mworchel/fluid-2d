@@ -2,6 +2,9 @@
 
 #include <utility>
 
+/**
+ * Helper class for launching one-dimensional and two-dimensional CUDA kernels
+ */
 class kernel_launcher {
 public:
     inline static constexpr unsigned int block_dim_1d() {

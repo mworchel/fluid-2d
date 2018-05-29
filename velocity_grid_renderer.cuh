@@ -7,18 +7,33 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 
+/**
+ * Representation of a SFML line as start and end vertex.
+ */
 struct sf_line {
     sf::Vertex start;
     sf::Vertex end;
 };
 
+/**
+* Class for drawing two floating point grids (representing horizontal and vertical velocity) to a render target.
+*/
 class velocity_grid_renderer : public grid_renderer {
 public:
+    /**
+    * Construct a new renderer.
+    *
+    * @param rows Number of rows of the grids that are drawn with the renderer.
+    * @param cols Number of columns of the grids that are drawn with the renderer.
+    */
     velocity_grid_renderer(size_t const rows, size_t const cols);
 
     ~velocity_grid_renderer();
 
-    void draw(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target);
+    /**
+     * Draw combined horizontal and vertical velocities to a target.
+     */
+    void draw(sf::RenderTarget& target, grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity);
 
 private:
     std::vector<sf_line>    m_line_vertices;

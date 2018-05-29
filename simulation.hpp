@@ -13,6 +13,9 @@
 
 enum class solver_type { gpu, cpu };
 
+/**
+ * Simulation parameters.
+ */
 struct simulation_config {
     size_t width = 0U;
     size_t height = 0U;
@@ -21,22 +24,43 @@ struct simulation_config {
     float viscosity = 1.0f;
 };
 
+/**
+ * Representation of the fluid simulation.
+ */
 class simulation {
 public:
     simulation(simulation_config const& config);
 
     void reset();
 
+    /**
+     * Transform a target position (x, y) into a density cell index (i, j).
+     */
     bool to_density_cell(float const x, float const y, sf::RenderTarget const& target, size_t& i, size_t& j);
 
+    /**
+     * Transform a target position (x, y) into a velocity cell index (i, j).
+     */
     bool to_velocity_cell(float const x, float const y, sf::RenderTarget const& target, size_t& i, size_t& j);
 
+    /**
+     * Add source density to the cell (i, j).
+     */
     void add_density_source(size_t const i, size_t const j, float const value);
 
+    /**
+     * Add source velocity to the cell (i, j).
+     */
     void add_velocity_source(size_t const i, size_t const j, float const horizontal_value, float const vertical_value);
 
+    /**
+     * Perform one update step of the simulation.
+     */
     void update(const std::chrono::duration<float>& dt);
 
+    /**
+     * Draw the simulation to a render target.
+     */
     void draw(sf::RenderTarget& target, color_multipliers const& density_color_multipliers, bool draw_density, bool draw_velocity);
 
 private:

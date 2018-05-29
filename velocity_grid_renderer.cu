@@ -20,15 +20,16 @@ __global__ void velocity_to_lines_kernel(element_accessor<T> horizontal_velociti
             line.end.position.x = j * horizontal_scale;
             line.end.position.y = i * vertical_scale;
 
+            // Determine line end point by following the velocity direction
             float2 velocity{ horizontal_velocities.at(j, i), vertical_velocities.at(j, i) };
-            float magnitude = sqrtf(velocity.x * velocity.x + velocity.y * velocity.y);
-            if(magnitude > 0.f) {
-                line.end.position.x += 10000.f * velocity.x / sqrtf(rows * cols);
-                line.end.position.y += 10000.f * velocity.y / sqrtf(rows * cols);
+            //float magnitude = sqrtf(velocity.x * velocity.x + velocity.y * velocity.y);
+            //if(magnitude > 0.f) {
+            line.end.position.x += 10000.f * velocity.x / sqrtf(rows * cols);
+            line.end.position.y += 10000.f * velocity.y / sqrtf(rows * cols);
 
-                line.start.color.r = line.start.color.g = line.start.color.b = line.start.color.a = 255;
-                line.end.color.r = line.end.color.g = line.end.color.b = line.start.color.a = 255;
-            }
+            line.start.color.r = line.start.color.g = line.start.color.b = line.start.color.a = 255;
+            line.end.color.r = line.end.color.g = line.end.color.b = line.start.color.a = 255;
+            //}
         }
     }
 }
@@ -43,13 +44,13 @@ velocity_grid_renderer::velocity_grid_renderer(size_t const _rows, size_t const 
 
 velocity_grid_renderer::~velocity_grid_renderer() {}
 
-void velocity_grid_renderer::draw(grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity, sf::RenderTarget& target) {
-    // Upload velocities to gpu
+void velocity_grid_renderer::draw(sf::RenderTarget& target, grid<float> const& horizontal_velocity, grid<float> const& vertical_velocity) {
+    // Upload both velocities to gpu
     cudaError error = copy(m_horizontal_velocity_buffer, horizontal_velocity);
     error = copy(m_vertical_velocity_buffer, vertical_velocity);
 
+    // Transform the separate velocities to lines
     error = m_line_vertex_buffer.clear(0);
-
     kernel_launcher::launch_2d(&velocity_to_lines_kernel<float>, cols(), rows(),
                                m_horizontal_velocity_buffer.accessor(), m_vertical_velocity_buffer.accessor(),
                                m_line_vertex_buffer.accessor(),

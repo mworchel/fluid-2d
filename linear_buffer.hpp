@@ -4,6 +4,9 @@
 
 #include <cuda_runtime.h>
 
+/**
+* Representation of a two-dimensional linear GPU buffer
+*/
 template<typename T>
 class linear_buffer : public gpu_buffer<T> {
 public:

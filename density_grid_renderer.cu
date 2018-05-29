@@ -28,12 +28,12 @@ __global__ void grid_to_image_kernel(element_accessor<T> const  grid,
     }
 }
 
-density_grid_renderer::density_grid_renderer(size_t const _rows, size_t const _cols)
-    : grid_renderer(_rows, _cols)
-    , m_grid_buffer{ _cols, _rows }
-    , m_image_buffer{ _cols, _rows } {
-    m_texture.create(static_cast<unsigned int>(_cols), static_cast<unsigned int>(_rows));
-    m_image.resize(_rows * _cols);
+density_grid_renderer::density_grid_renderer(size_t const rows_, size_t const cols_)
+    : grid_renderer(rows_, cols_)
+    , m_grid_buffer{ cols_, rows_ }
+    , m_image_buffer{ cols_, rows_ } {
+    m_texture.create(static_cast<unsigned int>(cols_), static_cast<unsigned int>(rows_));
+    m_image.resize(rows_ * cols_);
 }
 
 density_grid_renderer::~density_grid_renderer() {}
@@ -41,14 +41,16 @@ density_grid_renderer::~density_grid_renderer() {}
 void density_grid_renderer::draw(sf::RenderTarget& target, grid<float> const& grid, color_multipliers const& multipliers) {
     auto error = copy(m_grid_buffer, grid);
 
+    // Transfer the grid contents into the image buffer by performing a density to color mapping
     kernel_launcher::launch_2d(&grid_to_image_kernel<float>, cols(), rows(),
                                m_grid_buffer.accessor(), m_image_buffer.accessor(), rows(), cols(), multipliers);
     error = cudaDeviceSynchronize();
 
-    // 
+    // Update the SFML texture with the new texture data
     error = copy(m_image.data(), cols(), rows(), m_image_buffer, cudaMemcpyDeviceToHost);
     m_texture.update(reinterpret_cast<uint8_t*>(m_image.data()), static_cast<unsigned int>(cols()), static_cast<unsigned int>(rows()), 0U, 0U);
 
+    // Draw the texture scaled to the target size
     sf::Sprite sprite{ m_texture };
     sprite.setScale(target.getSize().x / sprite.getLocalBounds().width, target.getSize().y / sprite.getLocalBounds().height);
     target.draw(sprite);

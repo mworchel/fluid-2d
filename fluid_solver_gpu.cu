@@ -228,7 +228,7 @@ void fluid_solver_gpu::solve(grid<float>& density_grid,
                              grid<float> const& vertical_velocity_source_grid,
                              float const viscosity,
                              float const dt) {
-  // Upload density and velocities to gpu
+    // Upload density and velocities to gpu
     copy(m_density_buffer, density_grid);
     copy(m_horizontal_velocity_buffer, horizontal_velocity_grid);
     copy(m_vertical_velocity_buffer, vertical_velocity_grid);
@@ -298,7 +298,7 @@ void fluid_solver_gpu::diffuse(linear_buffer<float>& values_buffer,
     // First temporary buffer contains the initial values
     // Second temporary buffer contains the values of the previous iteration
     copy(initial_values_buffer, values_buffer);
-    for(size_t k = 0; k < iteration_count; k++) {
+    for(size_t k = 0; k < iteration_count; ++k) {
         copy(previous_values_buffer, values_buffer);
 
         kernel_launcher::launch_2d(&diffuse_iteration_kernel<float>, m_cols, m_rows,
@@ -365,7 +365,6 @@ void fluid_solver_gpu::project(linear_buffer<float>& horizontal_velocity_buffer,
     cudaDeviceSynchronize();
 
     float h = 1.0f / sqrtf(m_rows * m_cols);
-
     kernel_launcher::launch_2d(&calculate_divergence_kernel<float>, m_cols, m_rows,
                                divergence_buffer.accessor(),
                                horizontal_velocity_buffer.accessor(),
