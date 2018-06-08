@@ -4,6 +4,6 @@ A two-dimensional fluid simulation based on *Real-Time Fluid Dynamics for Games*
 
 # Requirements
 
-- CMake >= 3.9
+- CMake >= 3.09
 - CUDA  >= 8.0
 - SFML  >= 2.0
