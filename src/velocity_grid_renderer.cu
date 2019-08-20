@@ -20,16 +20,25 @@ __global__ void velocity_to_lines_kernel(element_accessor<T> horizontal_velociti
             line.end.position.x = j * horizontal_scale;
             line.end.position.y = i * vertical_scale;
 
-            // Determine line end point by following the velocity direction
-            float2 velocity{ horizontal_velocities.at(j, i), vertical_velocities.at(j, i) };
-            //float magnitude = sqrtf(velocity.x * velocity.x + velocity.y * velocity.y);
-            //if(magnitude > 0.f) {
-            line.end.position.x += 10000.f * velocity.x / sqrtf(rows * cols);
-            line.end.position.y += 10000.f * velocity.y / sqrtf(rows * cols);
+            // Undersample the velocity grid
+            if(i % 8 == 0 && j % 8 == 0)
+            {
+                // Determine line end point by following the velocity direction
+                float2 velocity{ horizontal_velocities.at(j, i), vertical_velocities.at(j, i) };
+                line.end.position.x += 250000.f * velocity.x / sqrtf(rows * cols);
+                line.end.position.y += 250000.f * velocity.y / sqrtf(rows * cols);
+            }
 
-            line.start.color.r = line.start.color.g = line.start.color.b = line.start.color.a = 255;
-            line.end.color.r = line.end.color.g = line.end.color.b = line.start.color.a = 255;
-            //}
+            // Color is fixed to white
+            line.start.color.r = 255;
+            line.start.color.g = 255;
+            line.start.color.b = 255;
+            line.start.color.a = 255;
+
+            line.end.color.r = 255;
+            line.end.color.g = 255;
+            line.end.color.b = 255;
+            line.end.color.a = 255;
         }
     }
 }
