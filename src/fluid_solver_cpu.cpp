@@ -1,6 +1,7 @@
 #include "fluid_solver_cpu.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 void fluid_solver_cpu::solve(grid<float>& density_grid,
                              grid<float> const& density_source_grid,
@@ -122,7 +123,7 @@ void fluid_solver_cpu::advect(grid<float>& grid_,
     size_t rows = grid_.rows();
     size_t cols = grid_.cols();
 
-    float dt0 = sqrt(rows * cols) * dt;
+    float dt0 = std::sqrt(static_cast<float>(rows * cols)) * dt;
     if(trace) {
         std::fill(std::begin(grid_), std::end(grid_), 0.f);
 
@@ -179,7 +180,7 @@ void fluid_solver_cpu::project(grid<float>& horizontal_velocity_grid, grid<float
     auto rows = horizontal_velocity_grid.rows();
     auto cols = horizontal_velocity_grid.cols();
 
-    float h = 1.0f / sqrtf(rows * cols);
+    float h = 1.0f / std::sqrt(static_cast<float>(rows * cols));
 
     grid<float> divergence{ rows, cols, 0.f };
     grid<float> p{ rows, cols, 0.f };

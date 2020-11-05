@@ -19,7 +19,7 @@ enum class solver_type { gpu, cpu };
 struct simulation_config {
     size_t width = 0U;
     size_t height = 0U;
-    solver_type solver_type = solver_type::gpu;
+    solver_type solver = solver_type::gpu;
     float diffusion_rate = 0.001f;
     float viscosity = 1.0f;
 };

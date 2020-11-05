@@ -29,7 +29,7 @@ simulation_config app::parse_simulation_config(int arg_count, char ** args) {
     simulation_config config;
     config.width = 800U;
     config.height = 800U;
-    config.solver_type = solver_type::gpu;
+    config.solver = solver_type::gpu;
     config.diffusion_rate = 0.5f;
     config.viscosity = 0.000001f;
     return config;

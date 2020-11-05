@@ -11,7 +11,7 @@ template<typename T>
 class linear_buffer : public gpu_buffer<T> {
 public:
     linear_buffer(size_t _width, size_t _height)
-        : gpu_buffer(_width, _height) {
+        : gpu_buffer<T>(_width, _height) {
         cudaMalloc(&m_data, byte_size());
     }
 
@@ -32,15 +32,15 @@ public:
     }
 
     virtual element_accessor<T> accessor() override {
-        return element_accessor<T>{ m_data, sizeof(T) * width() };
+        return element_accessor<T>{ m_data, sizeof(T) * gpu_buffer<T>::width() };
     }
 
     virtual element_accessor<T> const accessor() const override {
-        return element_accessor<T>{ m_data, sizeof(T) * width() };
+        return element_accessor<T>{ m_data, sizeof(T) * gpu_buffer<T>::width() };
     }
 
     size_t byte_size() const {
-        return sizeof(T) * width() * height();
+        return sizeof(T) * gpu_buffer<T>::width() * gpu_buffer<T>::height();
     }
 
 private:

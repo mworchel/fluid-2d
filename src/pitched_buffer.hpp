@@ -11,8 +11,8 @@ template<typename T>
 class pitched_buffer : public gpu_buffer<T> {
 public:
     pitched_buffer(size_t _width, size_t _height)
-        : gpu_buffer(_width, _height) {
-        cudaMallocPitch(&m_data, &m_pitch, byte_width(), height());
+        : gpu_buffer<T>(_width, _height) {
+        cudaMallocPitch(&m_data, &m_pitch, byte_width(), gpu_buffer<T>::height());
     }
 
     ~pitched_buffer() {
@@ -20,7 +20,7 @@ public:
     }
 
     virtual cudaError_t clear(int value) override {
-        return cudaMemset2D(m_data, m_pitch, value, byte_width(), height());
+        return cudaMemset2D(m_data, m_pitch, value, byte_width(), gpu_buffer<T>::height());
     }
 
     virtual T* data() override {
@@ -40,7 +40,7 @@ public:
     }
 
     size_t byte_width() const {
-        return sizeof(T) * width();
+        return sizeof(T) * gpu_buffer<T>::width();
     }
 
     size_t pitch() const {

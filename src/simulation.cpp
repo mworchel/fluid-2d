@@ -14,7 +14,7 @@ simulation::simulation(simulation_config const& config)
     , m_density_source_grid{ config.height, config.width, 0.f }
     , m_density_grid_renderer{ config.height, config.width }
     , m_velocity_grid_renderer{ config.height, config.width } {
-    switch(config.solver_type) {
+    switch(config.solver) {
         case(solver_type::cpu):
             m_solver = std::make_unique<fluid_solver_cpu>();
             break;
